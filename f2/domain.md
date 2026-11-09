@@ -1,0 +1,7 @@
+# Domain
+
+Collaborative online research involves groups of people working together to investigate a shared topic or question. Group members explore sources such as articles, websites, and academic papers to gather information and develop a better understanding of the topic. Research is rarely linear. One article might introduce an unfamiliar concept, leading to another website or a new question to explore. These research rabbit holes can reveal unexpected connections between topics.
+
+In group research, members often explore different directions independently before bringing their findings together. For example, a group researching social media might have one person investigating recommendation algorithms while another looks into political polarization. As they explore, they may discover sources relevant to each other's work or new questions worth investigating. This makes it important to understand not only what others have found, but also how their discoveries relate.
+
+The main stakeholders are the researchers themselves, who want to explore topics independently while contributing to a shared understanding. Some members may organize sources and synthesize findings, while others focus on specific questions. Ultimately, collaborative research aims to combine different perspectives and discoveries while giving individuals the freedom to follow their own curiosity.
