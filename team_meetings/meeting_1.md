@@ -4,6 +4,7 @@
 1. Overall Project Idea + Bad Situation
 - Problem space and motivation
 - Target Audience + Use Case
+- Web App vs Browser Extension
 
 2. Concepts
 - Any advice on current concepts: DiscoveryLinking and Github (Push, Fork, Contribute/Comment)
