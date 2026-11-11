@@ -1,6 +1,18 @@
 # Weekly Meeting 1
 
 ## Agenda
+1. Overall Project Idea + Bad Situation
+- Problem space and motivation
+- Target Audience + Use Case
+
+2. Concepts
+- Any advice on current concepts: DiscoveryLinking and Github (Push, Fork, Contribute/Comment)
+- Should we expand on these or add any more?
+
+3. Logistics/Issues
+- Establish a norm for how often we should meet, contact Eagon, etc.?
+- Issues listed below
+
 
 ## Project Summary
 
@@ -14,6 +26,8 @@
 ## Issues
 - **Forking:** Should users fork entire graphs or individual paths/nodes?
 - **Scope:** Which features can we realistically finish this semester?
-- **Search** Should search go by topic or URL? 
+- **Search** Should search go by topic or URL?
+- How should we split up the work?
+- Any general advice?
 
 ## Plans & Decisions (After Meeting)
