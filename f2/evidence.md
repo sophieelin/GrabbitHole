@@ -19,3 +19,9 @@
 - **Talking it through isn't enough.** Even when group members were willing to share everything, they couldn't remember enough of what they knew to get the full picture across ([Lightle, Kagel and Arkes](https://www.asc.ohio-state.edu/kagel.4/HP_Manuscript_MS_11_26_08.pdf)).
 - **A visual map makes someone's research easy to follow.** When people built on someone else's research map, the earlier person's thought process was easy to see, and the map's organization helped more than its content ([Fisher, Counts and Kittur, CHI 2012](https://www.microsoft.com/en-us/research/publication/distributed-sensemaking-improving-sensemaking-leveraging-efforts-previous-users/)).
 - **Structured summaries save the next person time.** When earlier research was saved in a structured form, the next person understood it about three times faster than people working from the raw web pages ([Liu et al., UIST 2019](https://par.nsf.gov/servlets/purl/10152057)).
+
+### 4. Difficulty Building on Existing Research 
+
+- **Research paths can be more useful than isolated links.** This study involving search data from 300+ users finds that exploratory searching is benefitted by recommending search trails from other users. This suggests that having the opportunity to see specific paths can be greatly helpful to one's own personal research. ([Hendahewa and Shah, 2017](https://www.sciencedirect.com/science/article/pii/S0306457316304915)).
+- **A visual map makes someone's research easy to follow.** This evidence also works for bad situation 4: When people built on someone else's research map, the earlier person's thought process was easy to see, and the map's organization helped more than its content ([Fisher, Counts and Kittur, CHI 2012](https://www.microsoft.com/en-us/research/publication/distributed-sensemaking-improving-sensemaking-leveraging-efforts-previous-users/)).
+
