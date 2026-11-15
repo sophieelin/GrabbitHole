@@ -4,7 +4,7 @@
 
 | Date | Stage | Expected Deliverables |
 |---|---|---|
-| Nov 16–19 | Concept Design | Finalize concepts and synchronizations; set up project structure and database. |
+| Nov 19 | Concept Design | Finalize concepts and synchronizations; set up project structure and database. |
 | **Nov 23** | **Alpha** | Create shared research projects, add sources and connections, and visualize basic graphs. |
 | **Nov 30** | **Beta** | Browser extension and session tracking, preliminary graph review, AI topic grouping, and contribution approval workflow. |
 | Dec 7 | User Testing | Test browsing sessions, graph editing, and collaboration; collect feedback and fix major issues. |
