@@ -12,13 +12,15 @@
 
 ## 2. Team Responsibilities
 
+## 2. Team Responsibilities
+
 | Member | Responsibility |
 |---|---|
-| Person 1 | Sessioning, DiscoveryLinking, and browser extension |
-| Person 2 | Grouping and Claude integration |
-| Person 3 | Contributing and Collaborating |
-| Person 4 | Frontend and graph visualization |
-| Everyone | Integration, testing, and documentation |
+| Person 1 | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
+| Person 2 | DiscoveryLinking: graph data model, sources, connections, notes, and graph merging |
+| Person 3 | Contributing and Collaborating: project creation, invitations, permissions, contribution proposals, and approval |
+| Person 4 | Grouping and frontend: Claude topic grouping, graph visualization, preliminary graph review, and UI |
+| Everyone | Initial setup, integration, testing, and documentation. |
 
 ## 3. Key Risks and Fallbacks
 
