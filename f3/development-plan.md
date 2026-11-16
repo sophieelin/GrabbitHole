@@ -16,10 +16,10 @@
 
 | Member | Responsibility |
 |---|---|
-| Person 1 | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
-| Person 2 | DiscoveryLinking: graph data model, sources, connections, notes, and graph merging |
-| Person 3 | Contributing and Collaborating: project creation, invitations, permissions, contribution proposals, and approval |
-| Person 4 | Grouping, frontend, and initial setup: Claude topic grouping, graph visualization, preliminary graph review, and UI |
+| Sophie | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
+| April | DiscoveryLinking: graph data model, sources, connections, notes, and graph merging |
+| Amber | Contributing and Collaborating: project creation, invitations, permissions, contribution proposals, and approval |
+| Dylan | Grouping, frontend, and initial setup: Claude topic grouping, graph visualization, preliminary graph review, and UI |
 | Everyone | Integration, testing, and documentation. |
 
 ## 3. Key Risks and Fallbacks

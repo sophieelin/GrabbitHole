@@ -165,11 +165,11 @@ Status is ACTIVE or STOPPED
 
 **Purpose**
 
-Preserve navigation paths so users can revisit and reconstruct their past browsing activity.
+Preserve the paths between visited sources so users can understand how they discovered information during a browsing session.
 
 **Principle**
 
-A user starts a browsing session and follows links between different websites. They later backtrack to a previously visited page and explore a different path. The system records both paths without duplicating previously visited pages. When the session ends, their browsing activity is saved for later review.
+A user starts a browsing session while researching a topic. They open several articles from the same website in different tabs, then follow additional links from those articles. The system records the visited URLs and which pages led to other pages, without duplicating sources or connections. When the session ends, the recorded research paths are saved for later review.
 
 **State**
 
@@ -178,7 +178,6 @@ a set of Sessions with
   a user User
   a status Status
   a visited set of Strings
-  an optional current String
 
 a set of Connections with
   a session Session
@@ -197,33 +196,23 @@ startSession(user: User): returns (session: Session)
       user set to given user
       status set to ACTIVE
       an empty set of visited URLs
-      no current URL
     return session
 
-recordVisit(session: Session, url: String)
+recordVisit(session: Session, url: String, sourceUrl?: String)
   where
     session exists
     session's status is ACTIVE
   then
-    if url is not in session's visited URLs
-      add url to session's visited URLs
-    if session has a current URL different from url
-      and no Connection with the same session,
-        source, and destination exists
-      create a Connection with
-        session set to given session
-        source set to current URL
-        destination set to url
-    set session's current URL to url
+    add url to session's visited URLs if not already present
 
-backtrack(session: Session, url: String)
-  where
-    session exists
-    session's status is ACTIVE
-    url belongs to session's visited URLs
-  then
-    set session's current URL to url
-    without creating a new Connection
+    if sourceUrl is provided and different from url
+      add sourceUrl to session's visited URLs if not already present
+      if no Connection with the same session,
+        source, and destination exists
+        create a Connection with
+          session set to given session
+          source set to sourceUrl
+          destination set to url
 
 stopSession(session: Session)
   where
@@ -235,10 +224,10 @@ stopSession(session: Session)
 
 **Notes**
 
-- The browser extension distinguishes browser-history navigation from following links, allowing backtracking without creating new connections.
+- The browser extension identifies visited URLs and their originating pages when possible, including links opened in new tabs.
+- Returning to a previously visited page or switching tabs does not create a new connection unless the user follows a link.
+- If the originating page cannot be determined, the URL is recorded without a connection.
 - When a session starts, application reactions create a preliminary research graph. As the user browses, recorded URLs and connections are added to this graph. When the session ends, the graph is available for review and editing before being merged into the main project graph.
-
-
 
 ## Grouping
 
@@ -555,15 +544,15 @@ then
 
 ### 3. Recording Sources and Connections
 
-When a user visits a new URL, add it to the session's preliminary graph.
+When a user visits a URL, add any newly recorded URLs to the session's preliminary graph.
 
 ```text
 reaction recordSessionSource
 when
-  Sessioning.recordVisit(session, url)
-  url was not previously visited in session
+  Sessioning.recordVisit(session, url, sourceUrl?)
 then
-  DiscoveryLinking.addSource(graph, url, user)
+  for each newly recorded URL
+    DiscoveryLinking.addSource(graph, url, user)
 ```
 
 When Sessioning records a new connection, add the corresponding connection to the preliminary graph.
@@ -571,15 +560,15 @@ When Sessioning records a new connection, add the corresponding connection to th
 ```text
 reaction recordSessionConnection
 when
-  Sessioning.recordVisit(session, url)
-  a new Connection from previousUrl to url is recorded
+  Sessioning.recordVisit(session, url, sourceUrl?)
+  a new Connection from sourceUrl to url is recorded
 then
   DiscoveryLinking.addConnection(
-    graph, previousSource, source, user
+    graph, source, destination, user
   )
 ```
 
-**Note:** `graph` is the preliminary graph associated with the session, and `user` is the session's researcher. Backtracking does not create new connections, and previously recorded sources or connections are not duplicated.
+**Note:** `graph` is the preliminary graph associated with the session, and `user` is the session's researcher. `source` and `destination` are the corresponding `DiscoveryLinking` Sources. Browser navigation that does not represent following a link does not create a connection, and previously recorded sources or connections are not duplicated.
 
 ### 4. Accepting a Contribution
 
@@ -686,7 +675,8 @@ then
 6. `Contributing.Change` → Proposed DiscoveryLinking operations and their arguments
 7. `Collaborating.User` → Grabbithole users
 
-**DiscoveryLinking** manages research graphs, including sources, connections, notes, and contributor attribution. **Sessioning** records browsing activity and works with DiscoveryLinking to create a preliminary graph for each research session. Researchers can add notes during browsing or afterward when reviewing their preliminary graph, before incorporating it into their project's main graph.
+**DiscoveryLinking** manages research graphs, including sources, connections, notes, and contributor attribution. **Sessioning** records visited URLs and the navigation relationships between them, including links opened in different tabs. It works with `DiscoveryLinking` to create a preliminary graph for each research session. Researchers can review and edit the graph, including its connections and notes, before incorporating it into their project's main graph.
+
 
 **Collaborating** manages project membership and reviewer permissions. Each project is associated with one main graph, while each research session is associated with a preliminary graph. **Contributing** allows users to propose changes to a project's main graph. A Change represents a DiscoveryLinking operation and its arguments, such as removing sources, adding or removing connections, adding, editing, or removing notes, or merging preliminary graphs. The application collects these arguments when users submit a proposal and preserves them until review. Only authorized reviewers, as determined by Collaborating, can approve or reject contributions. Accepted changes are applied through DiscoveryLinking.
 
