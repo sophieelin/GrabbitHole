@@ -12,8 +12,6 @@
 
 ## 2. Team Responsibilities
 
-## 2. Team Responsibilities
-
 | Member | Responsibility |
 |---|---|
 | Sophie | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
