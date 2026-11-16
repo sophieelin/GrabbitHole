@@ -19,8 +19,8 @@
 | Person 1 | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
 | Person 2 | DiscoveryLinking: graph data model, sources, connections, notes, and graph merging |
 | Person 3 | Contributing and Collaborating: project creation, invitations, permissions, contribution proposals, and approval |
-| Person 4 | Grouping and frontend: Claude topic grouping, graph visualization, preliminary graph review, and UI |
-| Everyone | Initial setup, integration, testing, and documentation. |
+| Person 4 | Grouping, frontend, and initial setup: Claude topic grouping, graph visualization, preliminary graph review, and UI |
+| Everyone | Integration, testing, and documentation. |
 
 ## 3. Key Risks and Fallbacks
 
