@@ -12,8 +12,6 @@
 
 ## 2. Team Responsibilities
 
-## 2. Team Responsibilities
-
 | Member | Responsibility |
 |---|---|
 | Person 1 | Sessioning and browser extension: track browsing sessions, URLs, navigation, and backtracking |
