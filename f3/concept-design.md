@@ -207,8 +207,7 @@ recordVisit(session: Session, url: String, sourceUrl?: String)
 
     if sourceUrl is provided and different from url
       add sourceUrl to session's visited URLs if not already present
-      if no Connection with the same session,
-        source, and destination exists
+      if no Connection with the same session, source, and destination exists
         create a Connection with
           session set to given session
           source set to sourceUrl
