@@ -1,5 +1,6 @@
 import { conceptSet } from "@mit-sdg/sync-engine/assembly";
 import { authenticating } from "./concepts/Authenticating/registry.ts";
+import { discoveryLinking } from "./concepts/DiscoveryLinking/registry.ts";
 import { registering } from "./concepts/Registering/registry.ts";
 import { sessioning } from "./concepts/Sessioning/registry.ts";
 
@@ -12,6 +13,7 @@ export const applicationConceptSet = conceptSet({
   Registering: registering,
   Authenticating: authenticating,
   Sessioning: sessioning,
+  DiscoveryLinking: discoveryLinking,
 });
 
 export const { concepts } = applicationConceptSet;

@@ -12,4 +12,7 @@ instantiate Authenticating with
 
 instantiate Sessioning with
   Subject is Registering.User
+
+instantiate DiscoveryLinking with
+  User is Registering.User
 ```

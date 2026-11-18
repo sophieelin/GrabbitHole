@@ -29,6 +29,57 @@ Defined in [Authenticating](../design/concepts/Authenticating.md), line 1.
 - `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 10.
   - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 11.
 
+### DiscoveryLinking
+
+Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.
+
+#### Actions
+
+- `createGraph(name: String) : returns (graph: Graph)`
+- `addSource(graph: Graph, url: String, contributor: User) : returns (source: Source)`
+  - Refuses `GRAPH_NOT_FOUND`: There is no such graph.
+  - Refuses `SOURCE_EXISTS`: This graph already has a source with that URL.
+- `addConnection(graph: Graph, source: Source, destination: Source, contributor: User) : returns (connection: Connection)`
+  - Refuses `GRAPH_NOT_FOUND`: There is no such graph.
+  - Refuses `SOURCE_NOT_IN_GRAPH`: Both sources of a connection must belong to its graph.
+  - Refuses `CONNECTION_EXISTS`: This graph already has a connection from that source to that destination.
+- `addNoteToSource(source: Source, author: User, text: String) : returns (note: Note)`
+  - Refuses `SOURCE_NOT_FOUND`: There is no such source.
+- `addNoteToConnection(connection: Connection, author: User, text: String) : returns (note: Note)`
+  - Refuses `CONNECTION_NOT_FOUND`: There is no such connection.
+- `removeSource(graph: Graph, source: Source) : returns ()`
+  - Refuses `GRAPH_NOT_FOUND`: There is no such graph.
+  - Refuses `SOURCE_NOT_IN_GRAPH`: That source does not belong to this graph.
+- `removeConnection(graph: Graph, connection: Connection) : returns ()`
+  - Refuses `GRAPH_NOT_FOUND`: There is no such graph.
+  - Refuses `CONNECTION_NOT_IN_GRAPH`: That connection does not belong to this graph.
+- `editNote(note: Note, text: String) : returns ()`
+  - Refuses `NOTE_NOT_FOUND`: There is no such note.
+- `removeNote(note: Note) : returns ()`
+  - Refuses `NOTE_NOT_FOUND`: There is no such note.
+- `mergeGraph(target: Graph, other: Graph) : returns ()`
+  - Refuses `GRAPH_NOT_FOUND`: There is no such graph.
+  - Refuses `SAME_GRAPH`: A graph cannot be merged into itself.
+
+#### Queries
+
+- `_graph(graph: Graph) : optional (name: String)`
+- `_sources(graph: Graph) : many (source: Source, url: String)`
+- `_sourceByUrl(graph: Graph, url: String) : optional (source: Source)`
+- `_note(note: Note) : optional (graph: Graph, author: User, text: String)`
+- `_source(source: Source) : optional (graph: Graph, url: String)`
+- `_connections(graph: Graph) : many (connection: Connection, source: Source, destination: Source)`
+- `_connection(connection: Connection) : optional (graph: Graph, source: Source, destination: Source)`
+- `_sourceContributors(source: Source) : many (contributor: User)`
+- `_connectionContributors(connection: Connection) : many (contributor: User)`
+- `_sourceNotes(source: Source) : many (note: Note, author: User, text: String)`
+- `_connectionNotes(connection: Connection) : many (note: Note, author: User, text: String)`
+
+#### Instances
+
+- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 16.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 17.
+
 ### Registering
 
 Defined in [Registering](../design/concepts/Registering.md), line 1.
