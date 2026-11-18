@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "GrabbitHole",
+  "version": "0.0.1",
+  "description": "Records the pages you visit during a research session and how you got to each one.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ]
+}
