@@ -1,8 +1,8 @@
-
 import { registerConcept } from "@mit-sdg/sync-engine/assembly";
 import spec from "@design/concepts/Collaborating.md" with { type: "text" };
 import type { Db } from "mongodb";
 import type { User } from "../Registering/Registering.ts";
+import type { Graph } from "../DiscoveryLinking/DiscoveryLinking.ts";
 
 import {
   CollaboratingConcept,
@@ -18,9 +18,11 @@ import {
   AlreadyReviewer,
   NotReviewer,
   CannotRevokeOwner,
+  ItemAlreadyAssociated,
+  ItemAlreadySet,
 } from "./Collaborating.ts";
 
-class Collaborating extends CollaboratingConcept<User> {}
+class Collaborating extends CollaboratingConcept<User, Graph> {}
 
 export const collaborating = registerConcept({
   class: Collaborating,
@@ -38,6 +40,8 @@ export const collaborating = registerConcept({
     ALREADY_REVIEWER: AlreadyReviewer,
     CANNOT_REVOKE_OWNER: CannotRevokeOwner,
     NOT_REVIEWER: NotReviewer,
+    ITEM_ALREADY_SET: ItemAlreadySet,
+    ITEM_ALREADY_ASSOCIATED: ItemAlreadyAssociated,
   },
   floors: {
     mongo: ({ database }: { database: Db }, name: string) =>

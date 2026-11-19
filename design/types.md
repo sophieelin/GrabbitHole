@@ -22,9 +22,11 @@ instantiate DiscoveryLinking with
 
 instantiate Collaborating with
   User is Registering.User
+  Item is DiscoveryLinking.Graph
 
 instantiate Contributing with
   User is Registering.User
   Item is DiscoveryLinking.Graph
   Change is Text
+
 ```

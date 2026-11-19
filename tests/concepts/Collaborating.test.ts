@@ -9,16 +9,20 @@ import {
   CannotRemoveOwner,
     NotMember,
   type Project,
+  ItemAlreadyAssociated,
+  ProjectNotFound,
+  ItemAlreadySet,
 } from "../../src/concepts/Collaborating/Collaborating.ts";
 import type { User } from "../../src/concepts/Registering/Registering.ts";
 import { testDatabase } from "../support/reusable/mongo.ts";
+import type { Graph } from "../../src/concepts/DiscoveryLinking/DiscoveryLinking.ts";
 
 const maya = "maya" as User;
 const sam = "sam" as User;
 
 async function setup() {
   return {
-    collaborating: new CollaboratingConcept<User>(
+    collaborating: new CollaboratingConcept<User, Graph>(
       await testDatabase()
     ),
   };
@@ -81,14 +85,14 @@ describe("Collaborating", () => {
 
   test("projects persist across concept instances", async () => {
   const database = await testDatabase();
-  const first = new CollaboratingConcept<User>(database);
+  const first = new CollaboratingConcept<User, Graph>(database);
 
   const { project } = await first.createProject({
     owner: maya,
     name: "Roman History",
   });
 
-  const second = new CollaboratingConcept<User>(database);
+  const second = new CollaboratingConcept<User, Graph>(database);
 
   expect(await second._project({ project })).toEqual([
     { name: "Roman History", owner: maya },
@@ -400,6 +404,149 @@ test("reviewer permissions require membership", async () => {
   expect(await collaborating._canReview({ project, user: sam }))
     .toEqual([{ allowed: false }]);
 });
+
+
+test("a project can be associated with a graph", async () => {
+  const { collaborating } = await setup();
+
+  const { project } = await collaborating.createProject({
+    owner: maya,
+    name: "Research",
+  });
+
+  const graph = "graph-1" as Graph;
+
+  expect(await collaborating._getItem({ project })).toEqual([]);
+
+  await collaborating.setItem({ project, item: graph });
+
+  expect(await collaborating._getItem({ project })).toEqual([
+    { item: graph },
+  ]);
+
+  expect(await collaborating._getProjectByItem({ item: graph })).toEqual([
+    { project },
+  ]);
+});
+
+test("a project cannot be associated with two graphs", async () => {
+  const { collaborating } = await setup();
+
+  const { project } = await collaborating.createProject({
+    owner: maya,
+    name: "Research",
+  });
+
+  await collaborating.setItem({
+    project,
+    item: "graph-1" as Graph,
+  });
+
+  await expect(
+    collaborating.setItem({
+      project,
+      item: "graph-2" as Graph,
+    }),
+  ).rejects.toThrow(ItemAlreadySet);
+
+  expect(await collaborating._getItem({ project })).toEqual([
+    { item: "graph-1" as Graph },
+  ]);
+});
+
+test("a graph cannot be associated with two projects", async () => {
+  const { collaborating } = await setup();
+
+  const first = await collaborating.createProject({
+    owner: maya,
+    name: "Project A",
+  });
+
+  const second = await collaborating.createProject({
+    owner: sam,
+    name: "Project B",
+  });
+
+  const graph = "shared-graph" as Graph;
+
+  await collaborating.setItem({
+    project: first.project,
+    item: graph,
+  });
+
+  await expect(
+    collaborating.setItem({
+      project: second.project,
+      item: graph,
+    }),
+  ).rejects.toThrow(ItemAlreadyAssociated);
+
+  expect(
+    await collaborating._getItem({ project: second.project }),
+  ).toEqual([]);
+});
+
+test("unknown projects and items return no association", async () => {
+  const { collaborating } = await setup();
+
+  expect(
+    await collaborating._getItem({
+      project: "missing" as Project,
+    }),
+  ).toEqual([]);
+
+  expect(
+    await collaborating._getProjectByItem({
+      item: "missing" as Graph,
+    }),
+  ).toEqual([]);
+
+  await expect(
+    collaborating.setItem({
+      project: "missing" as Project,
+      item: "graph-1" as Graph,
+    }),
+  ).rejects.toThrow(ProjectNotFound);
+});
+
+test("simultaneous associations cannot assign one graph twice", async () => {
+  const { collaborating } = await setup();
+
+  const first = await collaborating.createProject({
+    owner: maya,
+    name: "Project A",
+  });
+
+  const second = await collaborating.createProject({
+    owner: sam,
+    name: "Project B",
+  });
+
+  const graph = "shared-graph" as Graph;
+
+  const results = await Promise.allSettled([
+    collaborating.setItem({
+      project: first.project,
+      item: graph,
+    }),
+    collaborating.setItem({
+      project: second.project,
+      item: graph,
+    }),
+  ]);
+
+  expect(
+    results.filter((result) => result.status === "fulfilled"),
+  ).toHaveLength(1);
+
+  const failures = results.filter(
+    (result) => result.status === "rejected",
+  ) as PromiseRejectedResult[];
+
+  expect(failures).toHaveLength(1);
+  expect(failures[0]!.reason).toBeInstanceOf(ItemAlreadyAssociated);
+});
+
 
 
 });

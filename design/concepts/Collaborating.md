@@ -15,6 +15,9 @@ A user creates a shared project and invites others to participate. Once they acc
 external User
   A person who owns or participates in a project.
 
+external Item
+  The shared item associated with a project.
+
 InvitationStatus is PENDING or ACCEPTED or DECLINED
 ```
 
@@ -26,6 +29,7 @@ a set of Projects with
   an owner User
   a members set of Users
   a reviewers set of Users
+  an optional item Item
 
 a set of Invitations with
   a project Project
@@ -34,6 +38,7 @@ a set of Invitations with
 
 Rule: Each project's owner belongs to its members and reviewers.
 Rule: Each project's reviewers are members of that project.
+Rule: Each Item is associated with at most one Project.
 ```
 
 ## Actions
@@ -44,9 +49,24 @@ createProject(owner: User, name: String) : returns (project: Project)
   then
     add a new project with name and owner,
       members containing only owner,
-      and reviewers containing only owner
+      reviewers containing only owner,
+      and no associated item
     returns project
 
+setItem(project: Project, item: Item) : returns ()
+  where project is not in Projects
+  then
+    refuses PROJECT_NOT_FOUND "There is no such project."
+  where project is in Projects and project has an associated item
+  then
+    refuses ITEM_ALREADY_SET "This project already has an associated item."
+  where some other project in Projects has item
+  then
+    refuses ITEM_ALREADY_ASSOCIATED "This item is already associated with another project."
+  where project is in Projects, project has no associated item, and no other project has item
+  then
+    set project's item to item
+    returns
 
 invite(project: Project, inviter: User, invitee: User) : returns (invitation: Invitation)
   where project is not in Projects
@@ -60,7 +80,7 @@ invite(project: Project, inviter: User, invitee: User) : returns (invitation: In
     refuses ALREADY_MEMBER "This user is already a member."
   where project is in Projects and a pending invitation exists for invitee in project
   then
-    refuses ALREADY_INVITED "This user already has a pending invitation." 
+    refuses ALREADY_INVITED "This user already has a pending invitation."
   where project is in Projects, inviter is project's owner, invitee is not in project's members, and no pending invitation exists for invitee in project
   then
     add a new Invitation with project, invitee, and status PENDING
@@ -81,7 +101,6 @@ acceptInvitation(invitation: Invitation, user: User) : returns ()
     set invitation's status to ACCEPTED
     add user to invitation's project's members
     returns
-
 
 declineInvitation(invitation: Invitation, user: User) : returns ()
   where invitation is not in Invitations
@@ -151,8 +170,6 @@ revokeReviewer(project: Project, owner: User, member: User) : returns ()
   then
     remove member from project's reviewers
     returns
-
-
 ```
 
 ## Queries
@@ -167,13 +184,11 @@ _members(project: Project) : many (user: User)
 _reviewers(project: Project) : many (user: User)
   Returns each reviewer of the project, or no rows for an unknown project.
 
-
 _invitation(invitation: Invitation) : optional (project: Project, invitee: User, status: InvitationStatus)
   Returns the invitation's project, invitee, and status, or no row for an unknown invitation.
 
 _pendingInvitations(user: User) : many (invitation: Invitation, project: Project)
   Returns all pending invitations for the given user.
-
 
 _canReview(project: Project, user: User) : one (allowed: Flag)
   Returns true if the project exists and user belongs to its reviewers, otherwise false.
@@ -181,5 +196,9 @@ _canReview(project: Project, user: User) : one (allowed: Flag)
 _canView(project: Project, user: User) : one (allowed: Flag)
   Returns true if the project exists and user belongs to its members, otherwise false.
 
+_getItem(project: Project) : optional (item: Item)
+  Returns the item associated with the project, or no row if none exists.
 
+_getProjectByItem(item: Item) : optional (project: Project)
+  Returns the project associated with the item, or no row if none exists.
 ```

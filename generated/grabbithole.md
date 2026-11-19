@@ -36,6 +36,10 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 #### Actions
 
 - `createProject(owner: User, name: String) : returns (project: Project)`
+- `setItem(project: Project, item: Item) : returns ()`
+  - Refuses `PROJECT_NOT_FOUND`: There is no such project.
+  - Refuses `ITEM_ALREADY_SET`: This project already has an associated item.
+  - Refuses `ITEM_ALREADY_ASSOCIATED`: This item is already associated with another project.
 - `invite(project: Project, inviter: User, invitee: User) : returns (invitation: Invitation)`
   - Refuses `PROJECT_NOT_FOUND`: There is no such project.
   - Refuses `NOT_OWNER`: Only the project owner can invite users.
@@ -74,10 +78,13 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 - `_pendingInvitations(user: User) : many (invitation: Invitation, project: Project)`
 - `_canReview(project: Project, user: User) : one (allowed: Flag)`
 - `_canView(project: Project, user: User) : one (allowed: Flag)`
+- `_getItem(project: Project) : optional (item: Item)`
+- `_getProjectByItem(item: Item) : optional (project: Project)`
 
 #### Instances
 
 - `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 23.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 25.
   - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 24.
 
 ### Contributing
@@ -105,10 +112,10 @@ Defined in [Contributing](../design/concepts/Contributing.md), line 2.
 
 #### Instances
 
-- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 26.
-  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 29.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 28.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 27.
+- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 27.
+  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 30.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 29.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 28.
 
 ### DiscoveryLinking
 
