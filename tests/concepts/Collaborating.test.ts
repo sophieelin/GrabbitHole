@@ -72,4 +72,20 @@ describe("Collaborating", () => {
     expect(await collaborating._members({ project: missing })).toEqual([]);
     expect(await collaborating._reviewers({ project: missing })).toEqual([]);
   });
+
+  test("projects persist across concept instances", async () => {
+  const database = await testDatabase();
+  const first = new CollaboratingConcept<User>(database);
+
+  const { project } = await first.createProject({
+    owner: maya,
+    name: "Roman History",
+  });
+
+  const second = new CollaboratingConcept<User>(database);
+
+  expect(await second._project({ project })).toEqual([
+    { name: "Roman History", owner: maya },
+  ]);
+});
 });
