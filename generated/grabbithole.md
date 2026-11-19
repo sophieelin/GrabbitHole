@@ -29,6 +29,57 @@ Defined in [Authenticating](../design/concepts/Authenticating.md), line 1.
 - `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 10.
   - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 11.
 
+### Collaborating
+
+Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
+
+#### Actions
+
+- `createProject(owner: User, name: String) : returns (project: Project)`
+- `invite(project: Project, inviter: User, invitee: User) : returns (invitation: Invitation)`
+  - Refuses `PROJECT_NOT_FOUND`: There is no such project.
+  - Refuses `NOT_OWNER`: Only the project owner can invite users.
+  - Refuses `ALREADY_MEMBER`: This user is already a member.
+  - Refuses `ALREADY_INVITED`: This user already has a pending invitation.
+- `acceptInvitation(invitation: Invitation, user: User) : returns ()`
+  - Refuses `INVITATION_NOT_FOUND`: There is no such invitation.
+  - Refuses `INVITATION_NOT_PENDING`: This invitation is no longer pending.
+  - Refuses `NOT_INVITEE`: Only the invited user can accept this invitation.
+- `declineInvitation(invitation: Invitation, user: User) : returns ()`
+  - Refuses `INVITATION_NOT_FOUND`: There is no such invitation.
+  - Refuses `INVITATION_NOT_PENDING`: This invitation is no longer pending.
+  - Refuses `NOT_INVITEE`: Only the invited user can decline this invitation.
+- `removeMember(project: Project, owner: User, member: User) : returns ()`
+  - Refuses `PROJECT_NOT_FOUND`: There is no such project.
+  - Refuses `NOT_OWNER`: Only the project owner can remove members.
+  - Refuses `NOT_MEMBER`: This user is not a member.
+  - Refuses `CANNOT_REMOVE_OWNER`: The project owner cannot be removed.
+- `grantReviewer(project: Project, owner: User, member: User) : returns ()`
+  - Refuses `PROJECT_NOT_FOUND`: There is no such project.
+  - Refuses `NOT_OWNER`: Only the project owner can grant reviewer permissions.
+  - Refuses `NOT_MEMBER`: Only project members can become reviewers.
+  - Refuses `ALREADY_REVIEWER`: This member is already a reviewer.
+- `revokeReviewer(project: Project, owner: User, member: User) : returns ()`
+  - Refuses `PROJECT_NOT_FOUND`: There is no such project.
+  - Refuses `NOT_OWNER`: Only the project owner can revoke reviewer permissions.
+  - Refuses `CANNOT_REVOKE_OWNER`: The project owner's reviewer permissions cannot be revoked.
+  - Refuses `NOT_REVIEWER`: This user is not a reviewer.
+
+#### Queries
+
+- `_project(project: Project) : optional (name: String, owner: User)`
+- `_members(project: Project) : many (user: User)`
+- `_reviewers(project: Project) : many (user: User)`
+- `_invitation(invitation: Invitation) : optional (project: Project, invitee: User, status: InvitationStatus)`
+- `_pendingInvitations(user: User) : many (invitation: Invitation, project: Project)`
+- `_canReview(project: Project, user: User) : one (allowed: Flag)`
+- `_canView(project: Project, user: User) : one (allowed: Flag)`
+
+#### Instances
+
+- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 19.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 20.
+
 ### DiscoveryLinking
 
 Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.

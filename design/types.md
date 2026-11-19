@@ -15,4 +15,7 @@ instantiate Sessioning with
 
 instantiate DiscoveryLinking with
   User is Registering.User
+  
+instantiate Collaborating with
+  User is Registering.User
 ```
