@@ -388,6 +388,7 @@ withdraw(proposal: Proposal, user: User)
 
 ```text
 external User
+external Item
 
 InvitationStatus is PENDING or ACCEPTED or DECLINED
 ```
@@ -400,7 +401,6 @@ Allow users to manage participation and permissions within shared projects.
 
 A user creates a shared project and invites others to participate. Once they accept, they become members of the project. The project owner can manage membership and grant certain members permission to review contributions.
 
-
 **State**
 
 ```text
@@ -409,6 +409,7 @@ a set of Projects with
   an owner User
   a members set of Users
   a reviewers set of Users
+  an optional item Item
 
 a set of Invitations with
   a project Project
@@ -417,6 +418,7 @@ a set of Invitations with
 
 Rule: Each project's owner belongs to its members and reviewers.
 Rule: Each project's reviewers are members of that project.
+Rule: Each Item is associated with at most one Project.
 ```
 
 **Actions**
@@ -429,9 +431,19 @@ createProject(owner: User, name: String):
       name set to given name
       owner set to given owner
       owner included in members and reviewers
+      no associated item
     return project
 
-invite(project: Project, inviter: User, invitee: User)
+setItem(project: Project, item: Item)
+  where
+    project exists
+    project has no associated item
+    item is not associated with another Project
+  then
+    set project's item to given item
+
+invite(project: Project, inviter: User, invitee: User):
+  returns (invitation: Invitation)
   where
     project exists
     inviter is the project owner
@@ -443,6 +455,7 @@ invite(project: Project, inviter: User, invitee: User)
       project set to given project
       invitee set to given invitee
       status set to PENDING
+    return invitation
 
 acceptInvitation(invitation: Invitation, user: User)
   where
@@ -501,15 +514,21 @@ _canReview(project: Project, user: User): one (allowed: Flag)
 
 _canView(project: Project, user: User): one (allowed: Flag)
   returns true if user belongs to project's members
+
+_getItem(project: Project): optional (item: Item)
+  returns the Item associated with the project, if one exists
+
+_getProjectByItem(item: Item): optional (project: Project)
+  returns the Project associated with the item, if one exists
 ```
 
 **Notes**
 
 - Each project has one owner and may have multiple collaborators.
 - Collaborators can propose contributions, but only authorized reviewers can approve them.
-- Collaborating manages project membership and permissions independently of research graphs.
-- The application maintains the association between each project and its research graph.
-
+- Collaborating manages project membership, permissions, and associations with shared items without managing the items' contents.
+- In Grabbithole, `Collaborating.Item` is instantiated as `DiscoveryLinking.Graph`.
+- When a project is created, an application reaction creates its main research graph and associates it with the project using `setItem`.
 
 ## Some Essential Reactions
 
@@ -525,7 +544,18 @@ then
   DiscoveryLinking.createGraph(name): (graph)
 ```
 
-**Note:** The application associates the new project with its main research graph.
+Associate the newly created graph with its project.
+
+```text
+reaction associateProjectGraph
+when
+  Collaborating.createProject(owner, name): (project)
+  DiscoveryLinking.createGraph(name): (graph)
+then
+  Collaborating.setItem(project, graph)
+```
+
+**Note:** The graph in the second reaction is the graph created specifically for that project.
 
 ### 2. Creating a Preliminary Graph
 
@@ -604,7 +634,7 @@ then
   DiscoveryLinking.editNote(note, text)
 ```
 
-**Note:** These are representative reactions. Other accepted edits invoke their corresponding DiscoveryLinking actions. The application identifies the project associated with the proposal's target graph before checking reviewer permissions.
+**Note:** These are representative reactions. Other accepted edits invoke their corresponding DiscoveryLinking actions. The application identifies the project associated with the proposal's target graph using `Collaborating._getProjectByItem(target)` before checking reviewer permissions.
 
 ### 5. Grouping Newly Incorporated Sources
 
@@ -662,6 +692,7 @@ then
 **Note:** Removing a source does not delete the group itself.
 
 ---
+
 ## Concept Roles
 
 ### Generic Type Instantiations
@@ -673,10 +704,10 @@ then
 5. `Contributing.Item` → `DiscoveryLinking.Graph`
 6. `Contributing.Change` → Proposed DiscoveryLinking operations and their arguments
 7. `Collaborating.User` → Grabbithole users
+8. `Collaborating.Item` → `DiscoveryLinking.Graph`
 
-**DiscoveryLinking** manages research graphs, including sources, connections, notes, and contributor attribution. **Sessioning** records visited URLs and the navigation relationships between them, including links opened in different tabs. It works with `DiscoveryLinking` to create a preliminary graph for each research session. Researchers can review and edit the graph, including its connections and notes, before incorporating it into their project's main graph.
+**DiscoveryLinking** manages research graphs, including sources, connections, notes, and contributor attribution. **Sessioning** records visited URLs and the navigation relationships between them, including links opened in different tabs. It works with DiscoveryLinking to create a preliminary graph for each research session. Researchers can review and edit the graph, including its connections and notes, before incorporating it into their project's main graph.
 
-
-**Collaborating** manages project membership and reviewer permissions. Each project is associated with one main graph, while each research session is associated with a preliminary graph. **Contributing** allows users to propose changes to a project's main graph. A Change represents a DiscoveryLinking operation and its arguments, such as removing sources, adding or removing connections, adding, editing, or removing notes, or merging preliminary graphs. The application collects these arguments when users submit a proposal and preserves them until review. Only authorized reviewers, as determined by Collaborating, can approve or reject contributions. Accepted changes are applied through DiscoveryLinking.
+**Collaborating** manages project membership, reviewer permissions, and associations with shared items. In Grabbithole, each project is associated with a main research graph through `Collaborating.Item`, instantiated as `DiscoveryLinking.Graph`. Each research session is separately associated with a preliminary graph. **Contributing** allows users to propose changes to a project's main graph. A `Change` represents a DiscoveryLinking operation and its arguments, such as removing sources, adding or removing connections, adding, editing, or removing notes, or merging preliminary graphs. The application collects these arguments when users submit a proposal and preserves them until review. Only authorized reviewers, as determined by Collaborating, can approve or reject contributions. Accepted changes are applied through DiscoveryLinking.
 
 **Grouping** organizes sources in the main research graph into topics. An LLM suggests group names and assignments when new sources are incorporated, while users can manually adjust these groupings. Existing assignments remain unchanged unless edited.
