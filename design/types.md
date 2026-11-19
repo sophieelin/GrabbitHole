@@ -4,6 +4,10 @@ Every person in GrabbitHole is a Registering user. That user is the one who has 
 
 Sessioning in this file is the sign-in session: it answers "who is making this request". It is not the browsing-session concept from our F3 concept design, which is also called Sessioning there. The reusable sign-in compositions refer to the sign-in concept by the name Sessioning, so the browsing-session concept needs a different name (such as Browsing) when it is added.
 
+```types
+concrete Text
+  A serialized proposed operation and its arguments.
+```
 ```instances
 instantiate Registering
 
@@ -15,7 +19,12 @@ instantiate Sessioning with
 
 instantiate DiscoveryLinking with
   User is Registering.User
-  
+
 instantiate Collaborating with
   User is Registering.User
+
+instantiate Contributing with
+  User is Registering.User
+  Item is DiscoveryLinking.Graph
+  Change is Text
 ```

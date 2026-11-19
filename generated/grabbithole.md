@@ -26,8 +26,8 @@ Defined in [Authenticating](../design/concepts/Authenticating.md), line 1.
 
 #### Instances
 
-- `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 10.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 11.
+- `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 14.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 15.
 
 ### Collaborating
 
@@ -77,8 +77,38 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 
 #### Instances
 
-- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 19.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 20.
+- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 23.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 24.
+
+### Contributing
+
+Defined in [Contributing](../design/concepts/Contributing.md), line 2.
+
+#### Actions
+
+- `propose(user: User, target: Item, change: Change) : returns (proposal: Proposal)`
+- `accept(proposal: Proposal, reviewer: User) : returns ()`
+  - Refuses `PROPOSAL_NOT_FOUND`: There is no such proposal.
+  - Refuses `PROPOSAL_NOT_PENDING`: This proposal is no longer pending.
+- `reject(proposal: Proposal, reviewer: User, reason: String) : returns ()`
+  - Refuses `PROPOSAL_NOT_FOUND`: There is no such proposal.
+  - Refuses `PROPOSAL_NOT_PENDING`: This proposal is no longer pending.
+- `withdraw(proposal: Proposal, user: User) : returns ()`
+  - Refuses `PROPOSAL_NOT_FOUND`: There is no such proposal.
+  - Refuses `PROPOSAL_NOT_PENDING`: This proposal is no longer pending.
+  - Refuses `NOT_PROPOSER`: Only the proposer can withdraw this proposal.
+
+#### Queries
+
+- `_proposal(proposal: Proposal) : optional (proposer: User, target: Item, change: Change, status: Status, reviewer: User, reason: String)`
+- `_pending(target: Item) : many (proposal: Proposal, proposer: User, change: Change)`
+
+#### Instances
+
+- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 26.
+  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 29.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 28.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 27.
 
 ### DiscoveryLinking
 
@@ -128,8 +158,8 @@ Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.
 
 #### Instances
 
-- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 16.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 17.
+- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 20.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 21.
 
 ### Registering
 
@@ -148,7 +178,7 @@ Defined in [Registering](../design/concepts/Registering.md), line 1.
 
 #### Instances
 
-- `Registering` — instance of `Registering` — [GrabbitHole types](../design/types.md), line 8.
+- `Registering` — instance of `Registering` — [GrabbitHole types](../design/types.md), line 12.
 
 ### Sessioning
 
@@ -164,8 +194,14 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 13.
-  - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 14.
+- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 17.
+  - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 18.
+
+## Application types
+
+Concrete types:
+
+- `Text` — [GrabbitHole types](../design/types.md), line 8.
 
 ## Reactions
 

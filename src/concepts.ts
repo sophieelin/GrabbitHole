@@ -4,6 +4,7 @@ import { discoveryLinking } from "./concepts/DiscoveryLinking/registry.ts";
 import { registering } from "./concepts/Registering/registry.ts";
 import { sessioning } from "./concepts/Sessioning/registry.ts";
 import { collaborating } from "./concepts/Collaborating/registry.ts";
+import { contributing } from "./concepts/Contributing/registry.ts";
 
 /**
  * Every concept in GrabbitHole. To add yours: write `design/concepts/<Name>.md` and
@@ -16,5 +17,6 @@ export const applicationConceptSet = conceptSet({
   Sessioning: sessioning,
   DiscoveryLinking: discoveryLinking,
   Collaborating: collaborating,
+  Contributing: contributing,
 });
 export const { concepts } = applicationConceptSet;
