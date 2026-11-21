@@ -54,7 +54,7 @@ Settings are in `.env` (copy `.env.example`). Never commit `.env`.
 | The Vue frontend | | `frontend/src/` | |
 | The browser extension | | `extension/` | |
 
-What is here now is signing in with a password: the concepts Registering, Authenticating, and Sessioning, with the accounts and passwords compositions, all from ConceptBox. None of our own concepts are added yet.
+What is here now is signing in with a password: the concepts Registering, Authenticating, and SignIn, with the accounts and passwords compositions, all from ConceptBox. None of our own concepts are added yet.
 
 ## Add your concept
 
@@ -65,7 +65,7 @@ What is here now is signing in with a password: the concepts Registering, Authen
 
 Reactions and endpoints go in `src/compositions/<name>.ts` with a matching `design/compositions/<name>.md`; add both to `src/application.ts` and `generated.config.ts`. ConceptBox's `src/compositions/` has examples of each.
 
-One thing that differs from `f3/concept-design.md`: **Sessioning here is the sign-in session.** The sign-in code refers to it by that name, so our browsing-session concept needs another name (such as Browsing) when it is added.
+The sign-in session concept is called **SignIn**, so that **Sessioning** is the browsing-session concept from `f3/concept-design.md`.
 
 ## Working together
 

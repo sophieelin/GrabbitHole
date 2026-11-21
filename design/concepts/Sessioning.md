@@ -2,62 +2,83 @@
 
 ## Purpose
 
-Let people stay signed in across requests without sending their password each time.
-
-*Prevents:* someone keeps using a session after signing out; someone who finds a session left open on a shared computer, or copies one, keeps using it indefinitely; someone who comes back after a few days has to sign in again.
+Preserve the paths between visited sources so users can understand how they discovered information during a browsing session.
 
 ## Principle
 
-After Maya proves who she is, a session is started for her. Each time she sends a request with the session, Sessioning returns her as the person it belongs to and records when she last used it. When she signs out, the session ends, and any later request that carries it is refused. She forgets to sign out on a library computer; nobody uses that session for a week, and then it is refused. She uses the session on her own laptop every day, but three months after it started, that one is refused too, and she signs in again.
+A user starts a browsing session while researching a topic. They open several articles from the same website in different tabs, then follow additional links from those articles. The system records the visited URLs and which pages led to other pages, without duplicating sources or connections. When the session ends, the recorded research paths are saved for later review.
 
 ## Types
 
 ```types
-external Subject
-  The person a session belongs to.
+external User
+  The researcher a browsing session belongs to.
+
+Status is ACTIVE or STOPPED
+  Whether a browsing session is still recording visits.
 ```
 
 ## State
 
 ```state
 a set of Sessions with
-  a Subject
-  a lastUsed DateTime
-  an expiresAt DateTime
+  a user User
+  a status Status
+  a visited set of String
 
-Rule: a session's identity is unguessable, and it is all a person sends to use the session.
-Rule: Sessioning may delete a session at any time once it can no longer be used.
+a set of Connections with
+  a session Session
+  a source String
+  a destination String
+
+Rule: No two Connections have the same session, source, and destination.
 ```
 
 ## Actions
 
 ```actions
-start(subject: Subject) : returns (session: Session, expiresAt: DateTime)
+startSession(user: User) : returns (session: Session)
   where true
   then
-    add a new session for subject, last used now, that expires 90 days from now
-    returns session, expiresAt
-
-use(session: Session) : returns (subject: Subject)
-  where session is unknown, has not been used for 7 days, or has expired
-  then
-    refuses NOT_SIGNED_IN "Your session has ended. Sign in again."
-  where session was used within the last 7 days and has not expired
-  then
-    set the session's lastUsed to now
-    returns subject
-
-end(session: Session) : returns (session: Session)
-  where session is unknown, has not been used for 7 days, or has expired
-  then
-    refuses NOT_SIGNED_IN "Your session has ended. Sign in again."
-  where session was used within the last 7 days and has not expired
-  then
-    remove session
+    create a new Session with user set to given user, status set to ACTIVE, and an empty set of visited URLs
     returns session
+
+recordVisit(session: Session, url: String, sourceUrl?: String) : returns ()
+  where session does not exist
+  then
+    refuses SESSION_NOT_FOUND "There is no such session."
+  where session exists and session's status is not ACTIVE
+  then
+    refuses SESSION_NOT_ACTIVE "This session has stopped."
+  where session exists and session's status is ACTIVE
+  then
+    add url to session's visited URLs if not already present
+    if sourceUrl is provided and different from url, add sourceUrl to session's visited URLs if not already present
+    if sourceUrl is provided and different from url, and no Connection with the same session, source, and destination exists, create a Connection with session set to given session, source set to sourceUrl, and destination set to url
+    returns
+
+stopSession(session: Session) : returns ()
+  where session does not exist
+  then
+    refuses SESSION_NOT_FOUND "There is no such session."
+  where session exists and session's status is not ACTIVE
+  then
+    refuses SESSION_NOT_ACTIVE "This session has stopped."
+  where session exists and session's status is ACTIVE
+  then
+    set session's status to STOPPED
+    returns
 ```
 
 ## Queries
 
 ```queries
+_session(session: Session) : optional (user: User, status: Status)
+  Returns the session's user and status, or no row for an unknown session.
+
+_visited(session: Session) : many (url: String)
+  Returns each URL visited in the session once, ordered by when it was first recorded. Returns no rows for an unknown session or a session with no visits.
+
+_connections(session: Session) : many (source: String, destination: String)
+  Returns every connection recorded in the session, ordered by when each was first recorded. Returns no rows for an unknown session or a session with no connections.
 ```

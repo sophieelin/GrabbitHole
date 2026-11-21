@@ -2,9 +2,10 @@ import { conceptSet } from "@mit-sdg/sync-engine/assembly";
 import { authenticating } from "./concepts/Authenticating/registry.ts";
 import { discoveryLinking } from "./concepts/DiscoveryLinking/registry.ts";
 import { registering } from "./concepts/Registering/registry.ts";
-import { sessioning } from "./concepts/Sessioning/registry.ts";
+import { signIn } from "./concepts/SignIn/registry.ts";
 import { collaborating } from "./concepts/Collaborating/registry.ts";
 import { contributing } from "./concepts/Contributing/registry.ts";
+import { sessioning } from "./concepts/Sessioning/registry.ts";
 
 /**
  * Every concept in GrabbitHole. To add yours: write `design/concepts/<Name>.md` and
@@ -14,9 +15,10 @@ import { contributing } from "./concepts/Contributing/registry.ts";
 export const applicationConceptSet = conceptSet({
   Registering: registering,
   Authenticating: authenticating,
-  Sessioning: sessioning,
+  SignIn: signIn,
   DiscoveryLinking: discoveryLinking,
   Collaborating: collaborating,
   Contributing: contributing,
+  Sessioning: sessioning,
 });
 export const { concepts } = applicationConceptSet;

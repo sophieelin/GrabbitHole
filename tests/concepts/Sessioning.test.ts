@@ -1,103 +1,123 @@
 import { describe, expect, test } from "bun:test";
-import { NotSignedIn, type Session, SessioningConcept } from "../../src/concepts/Sessioning/Sessioning.ts";
+import {
+  type Session,
+  SessionNotActive,
+  SessionNotFound,
+  SessioningConcept,
+} from "../../src/concepts/Sessioning/Sessioning.ts";
+import type { User } from "../../src/concepts/Registering/Registering.ts";
 import { testDatabase } from "../support/reusable/mongo.ts";
-import { expectOneWinner } from "../support/reusable/race.ts";
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
+const dylan = "dylan" as User;
+
+const ARTICLE = "https://news.example/roman-concrete";
+const MUSEUM = "https://museum.example/pantheon";
+const PAPER = "https://journal.example/lime-clasts";
+const MUSEUM_TOUR = "https://museum.example/tour";
+const TIKTOK = "https://tiktok.example/video";
 
 async function setup() {
-  const database = await testDatabase();
-  // Starts at the real time so the database's expiry sweep never removes a session mid-test.
-  const started = new Date();
-  let now = started;
-  const clock = () => now;
-  const advance = (milliseconds: number) => (now = new Date(now.getTime() + milliseconds));
-  return { sessioning: new SessioningConcept(database, "Sessioning", clock), database, started, advance };
+  return { sessioning: new SessioningConcept<User>(await testDatabase()) };
 }
 
 describe("Sessioning", () => {
-  test("its principle: Maya stays signed in until she signs out, leaves a session unused for a week, or reaches 90 days", async () => {
-    const { sessioning, started, advance } = await setup();
-
-    const { session: laptop, expiresAt } = await sessioning.start({ subject: "maya" });
-    expect(expiresAt).toEqual(new Date(started.getTime() + 90 * DAY));
-    expect(await sessioning.use({ session: laptop })).toEqual({ subject: "maya" });
-
-    const { session: browser } = await sessioning.start({ subject: "maya" });
-    expect(await sessioning.use({ session: browser })).toEqual({ subject: "maya" });
-    expect(await sessioning.end({ session: browser })).toEqual({ session: browser });
-    await expect(sessioning.use({ session: browser })).rejects.toThrow(NotSignedIn);
-
-    const { session: library } = await sessioning.start({ subject: "maya" });
-    for (let day = 1; day < 90; day += 1) {
-      advance(DAY);
-      expect(await sessioning.use({ session: laptop })).toEqual({ subject: "maya" });
-      if (day === 7) {
-        const refusal = sessioning.use({ session: library });
-        await expect(refusal).rejects.toThrow(NotSignedIn);
-        await expect(refusal).rejects.toThrow("Your session has ended. Sign in again.");
-      }
-    }
-
-    advance(DAY);
-    await expect(sessioning.use({ session: laptop })).rejects.toThrow(NotSignedIn);
-  });
-
-  test("a session's identity is 32 random bytes in base64url", async () => {
+  test("its principle: Dylan's visits and the links he follows are recorded once each, and saved when he stops", async () => {
     const { sessioning } = await setup();
-    const { session: first } = await sessioning.start({ subject: "maya" });
-    const { session: second } = await sessioning.start({ subject: "maya" });
-    expect(first).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(first).not.toBe(second);
+    const { session } = await sessioning.startSession({ user: dylan });
+    expect(await sessioning._session({ session })).toEqual([{ user: dylan, status: "ACTIVE" }]);
+    expect(await sessioning._visited({ session })).toEqual([]);
+
+    await sessioning.recordVisit({ session, url: ARTICLE });
+    await sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE });
+    await sessioning.recordVisit({ session, url: PAPER, sourceUrl: MUSEUM });
+    // Another page on the museum's site, opened from the article in a new tab.
+    await sessioning.recordVisit({ session, url: MUSEUM_TOUR, sourceUrl: ARTICLE });
+    // Following the same link again duplicates neither the sources nor the connection.
+    await sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE });
+    // A page whose origin is unknown is recorded without a connection.
+    await sessioning.recordVisit({ session, url: TIKTOK });
+
+    await sessioning.stopSession({ session });
+
+    expect(await sessioning._session({ session })).toEqual([{ user: dylan, status: "STOPPED" }]);
+    expect(await sessioning._visited({ session })).toEqual([
+      { url: ARTICLE },
+      { url: MUSEUM },
+      { url: PAPER },
+      { url: MUSEUM_TOUR },
+      { url: TIKTOK },
+    ]);
+    expect(await sessioning._connections({ session })).toEqual([
+      { source: ARTICLE, destination: MUSEUM },
+      { source: MUSEUM, destination: PAPER },
+      { source: ARTICLE, destination: MUSEUM_TOUR },
+    ]);
   });
 
-  test("every use sets lastUsed to now, so the week of idleness counts from the latest use", async () => {
-    const { sessioning, database, started, advance } = await setup();
-    const sessions = database.collection<{ _id: string; lastUsed: Date }>("sessioning.sessions");
-    const { session } = await sessioning.start({ subject: "maya" });
-
-    advance(MINUTE);
-    await sessioning.use({ session });
-    expect((await sessions.findOne({ _id: session }))?.lastUsed).toEqual(new Date(started.getTime() + MINUTE));
-
-    advance(7 * DAY - MINUTE);
-    expect(await sessioning.use({ session })).toEqual({ subject: "maya" });
-    advance(7 * DAY - MINUTE);
-    expect(await sessioning.use({ session })).toEqual({ subject: "maya" });
-    advance(7 * DAY);
-    await expect(sessioning.use({ session })).rejects.toThrow(NotSignedIn);
-  });
-
-  test("a refused use or end changes no session", async () => {
-    const { sessioning, database, advance } = await setup();
-    const sessions = database.collection("sessioning.sessions");
-    const { session: idle } = await sessioning.start({ subject: "maya" });
-    const { session: forgotten } = await sessioning.start({ subject: "sam" });
-    const before = await sessions.find().sort({ _id: 1 }).toArray();
-
-    advance(7 * DAY);
-    await expect(sessioning.use({ session: idle })).rejects.toThrow(NotSignedIn);
-    await expect(sessioning.end({ session: forgotten })).rejects.toThrow(NotSignedIn);
-    await expect(sessioning.end({ session: idle })).rejects.toThrow(NotSignedIn);
-    expect(await sessions.find().sort({ _id: 1 }).toArray()).toEqual(before);
-  });
-
-  test("Sessioning refuses to use or end an unknown or ended session", async () => {
+  test("a sourceUrl not yet visited is added to the visited URLs too", async () => {
     const { sessioning } = await setup();
-    await expect(sessioning.use({ session: "missing" as Session })).rejects.toThrow(NotSignedIn);
-    await expect(sessioning.end({ session: "missing" as Session })).rejects.toThrow(NotSignedIn);
-
-    const { session } = await sessioning.start({ subject: "maya" });
-    await sessioning.end({ session });
-    await expect(sessioning.end({ session })).rejects.toThrow(NotSignedIn);
-    await expect(sessioning.use({ session })).rejects.toThrow(NotSignedIn);
+    const { session } = await sessioning.startSession({ user: dylan });
+    await sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE });
+    expect(await sessioning._visited({ session })).toEqual([{ url: MUSEUM }, { url: ARTICLE }]);
+    expect(await sessioning._connections({ session })).toEqual([{ source: ARTICLE, destination: MUSEUM }]);
   });
 
-  test("of two ends of one session at once, Sessioning accepts one and refuses the other with NOT_SIGNED_IN", async () => {
+  test("a sourceUrl equal to url records the visit without a connection", async () => {
     const { sessioning } = await setup();
-    const { session } = await sessioning.start({ subject: "maya" });
-    await expectOneWinner([sessioning.end({ session }), sessioning.end({ session })], NotSignedIn);
+    const { session } = await sessioning.startSession({ user: dylan });
+    await sessioning.recordVisit({ session, url: ARTICLE, sourceUrl: ARTICLE });
+    expect(await sessioning._visited({ session })).toEqual([{ url: ARTICLE }]);
+    expect(await sessioning._connections({ session })).toEqual([]);
+  });
+
+  test("connections and visits belong to their own session", async () => {
+    const { sessioning } = await setup();
+    const { session: first } = await sessioning.startSession({ user: dylan });
+    const { session: second } = await sessioning.startSession({ user: dylan });
+    expect(second).not.toBe(first);
+    await sessioning.recordVisit({ session: first, url: MUSEUM, sourceUrl: ARTICLE });
+    await sessioning.recordVisit({ session: second, url: MUSEUM, sourceUrl: ARTICLE });
+    expect(await sessioning._connections({ session: first })).toEqual([{ source: ARTICLE, destination: MUSEUM }]);
+    expect(await sessioning._connections({ session: second })).toEqual([{ source: ARTICLE, destination: MUSEUM }]);
+    await sessioning.stopSession({ session: first });
+    await sessioning.recordVisit({ session: second, url: PAPER });
+    expect(await sessioning._visited({ session: first })).toEqual([{ url: MUSEUM }, { url: ARTICLE }]);
+  });
+
+  test("a stopped session refuses visits and a second stop with SESSION_NOT_ACTIVE", async () => {
+    const { sessioning } = await setup();
+    const { session } = await sessioning.startSession({ user: dylan });
+    await sessioning.recordVisit({ session, url: ARTICLE });
+    await sessioning.stopSession({ session });
+
+    const visit = sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE });
+    await expect(visit).rejects.toThrow(SessionNotActive);
+    await expect(visit).rejects.toThrow("This session has stopped.");
+    await expect(sessioning.stopSession({ session })).rejects.toThrow(SessionNotActive);
+    expect(await sessioning._visited({ session })).toEqual([{ url: ARTICLE }]);
+    expect(await sessioning._connections({ session })).toEqual([]);
+  });
+
+  test("an unknown session is refused with SESSION_NOT_FOUND and has no rows", async () => {
+    const { sessioning } = await setup();
+    const missing = "missing" as Session;
+    const visit = sessioning.recordVisit({ session: missing, url: ARTICLE });
+    await expect(visit).rejects.toThrow(SessionNotFound);
+    await expect(visit).rejects.toThrow("There is no such session.");
+    await expect(sessioning.stopSession({ session: missing })).rejects.toThrow(SessionNotFound);
+    expect(await sessioning._session({ session: missing })).toEqual([]);
+    expect(await sessioning._visited({ session: missing })).toEqual([]);
+    expect(await sessioning._connections({ session: missing })).toEqual([]);
+  });
+
+  test("the same link followed twice at once records one connection", async () => {
+    const { sessioning } = await setup();
+    const { session } = await sessioning.startSession({ user: dylan });
+    await Promise.all([
+      sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE }),
+      sessioning.recordVisit({ session, url: MUSEUM, sourceUrl: ARTICLE }),
+    ]);
+    expect(await sessioning._connections({ session })).toEqual([{ source: ARTICLE, destination: MUSEUM }]);
+    expect(await sessioning._visited({ session })).toEqual([{ url: MUSEUM }, { url: ARTICLE }]);
   });
 });

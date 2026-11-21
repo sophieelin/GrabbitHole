@@ -19,22 +19,22 @@ export type GrabbitHoleWire = {
       "username": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_byUsername"]>[0], ["username"]>>;
     };
     output: {
-      "expiresAt": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>>, ["expiresAt"]>>;
-      "session": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>>, ["session"]>>;
-      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>[0], ["subject"]>>;
+      "expiresAt": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>>, ["expiresAt"]>>;
+      "session": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>>, ["session"]>>;
+      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>[0], ["subject"]>>;
     };
     error: { error: AppWideError | "INVALID_CREDENTIALS" | "INVALID_INPUT" };
   };
   "/auth/logout": {
     input: {
-      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["end"]>[0], ["session"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["end"]>[0], ["session"]>>;
     };
     output: Record<string, never>;
     error: { error: AppWideError | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
   "/auth/me": {
     input: {
-      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["use"]>[0], ["session"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
       "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
@@ -47,9 +47,9 @@ export type GrabbitHoleWire = {
       "username": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["register"]>[0], ["username"]>>;
     };
     output: {
-      "expiresAt": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>>, ["expiresAt"]>>;
-      "session": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>>, ["session"]>>;
-      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>[0], ["subject"]>>;
+      "expiresAt": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>>, ["expiresAt"]>>;
+      "session": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>>, ["session"]>>;
+      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>[0], ["subject"]>>;
     };
     error: { error: AppWideError | "INVALID_INPUT" | "INVALID_PASSWORD" | "INVALID_USERNAME" | "PASSWORD_SET" | "USERNAME_TAKEN" };
   };
@@ -64,7 +64,7 @@ export type GrabbitHoleWireHttp = {
       "username": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_byUsername"]>[0], ["username"]>>;
     };
     output: {
-      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>[0], ["subject"]>>;
+      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>[0], ["subject"]>>;
     };
     error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
@@ -86,7 +86,7 @@ export type GrabbitHoleWireHttp = {
       "username": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["register"]>[0], ["username"]>>;
     };
     output: {
-      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["start"]>[0], ["subject"]>>;
+      "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>[0], ["subject"]>>;
     };
     error: { error: HttpAppWideError | "CONFLICT" | "INVALID_REQUEST" };
   };

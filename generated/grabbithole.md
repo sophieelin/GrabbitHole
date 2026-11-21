@@ -83,9 +83,9 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 
 #### Instances
 
-- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 23.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 25.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 24.
+- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 26.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 28.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 27.
 
 ### Contributing
 
@@ -112,10 +112,10 @@ Defined in [Contributing](../design/concepts/Contributing.md), line 2.
 
 #### Instances
 
-- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 27.
-  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 30.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 29.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 28.
+- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 30.
+  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 33.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 32.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 31.
 
 ### DiscoveryLinking
 
@@ -165,8 +165,8 @@ Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.
 
 #### Instances
 
-- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 20.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 21.
+- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 23.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 24.
 
 ### Registering
 
@@ -193,6 +193,31 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Actions
 
+- `startSession(user: User) : returns (session: Session)`
+- `recordVisit(session: Session, url: String, sourceUrl?: String) : returns ()`
+  - Refuses `SESSION_NOT_FOUND`: There is no such session.
+  - Refuses `SESSION_NOT_ACTIVE`: This session has stopped.
+- `stopSession(session: Session) : returns ()`
+  - Refuses `SESSION_NOT_FOUND`: There is no such session.
+  - Refuses `SESSION_NOT_ACTIVE`: This session has stopped.
+
+#### Queries
+
+- `_session(session: Session) : optional (user: User, status: Status)`
+- `_visited(session: Session) : many (url: String)`
+- `_connections(session: Session) : many (source: String, destination: String)`
+
+#### Instances
+
+- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 20.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 21.
+
+### SignIn
+
+Defined in [SignIn](../design/concepts/SignIn.md), line 1.
+
+#### Actions
+
 - `start(subject: Subject) : returns (session: Session, expiresAt: DateTime)`
 - `use(session: Session) : returns (subject: Subject)`
   - Refuses `NOT_SIGNED_IN`: Your session has ended. Sign in again.
@@ -201,7 +226,7 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 17.
+- `SignIn` — instance of `SignIn` — [GrabbitHole types](../design/types.md), line 17.
   - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 18.
 
 ## Application types
@@ -241,7 +266,7 @@ Authored path: `reusable.accounts.identifying.Me`.
 ```reaction
 when RequestBoundary.request (path: "/auth/me", requestId, session)
 then
-  Sessioning.use (session)
+  SignIn.use (session)
 ```
 
 ### reusable.accounts.identifying.Me#2
@@ -251,7 +276,7 @@ Authored path: `reusable.accounts.identifying.Me`.
 - Covered by [Accounts](../design/compositions/reusable/accounts.md), line 8.
 
 ```reaction
-when Sessioning.use (session, subject: user), asked by reusable.accounts.identifying.Me
+when SignIn.use (session, subject: user), asked by reusable.accounts.identifying.Me
 where
   Registering._username (user) has (username)
   earlier, RequestBoundary.request (path: "/auth/me", requestId, session)
@@ -268,7 +293,7 @@ Authored path: `reusable.accounts.leaving.SignOut`.
 ```reaction
 when RequestBoundary.request (path: "/auth/logout", requestId, session)
 then
-  Sessioning.end (session)
+  SignIn.end (session)
 ```
 
 ### reusable.accounts.leaving.SignOut#2
@@ -278,7 +303,7 @@ Authored path: `reusable.accounts.leaving.SignOut`.
 - Covered by [Accounts](../design/compositions/reusable/accounts.md), line 14.
 
 ```reaction
-when Sessioning.end (session), asked by reusable.accounts.leaving.SignOut
+when SignIn.end (session), asked by reusable.accounts.leaving.SignOut
 where
   earlier, RequestBoundary.request (path: "/auth/logout", requestId, session)
 then
@@ -322,7 +347,7 @@ Authored path: `reusable.passwords.entering.Register`.
 ```reaction
 when Authenticating.set (password, user), asked by reusable.passwords.entering.Register:accepted#2
 then
-  Sessioning.start (subject: user)
+  SignIn.start (subject: user)
 ```
 
 ### reusable.passwords.entering.Register:accepted#4
@@ -332,7 +357,7 @@ Authored path: `reusable.passwords.entering.Register`.
 - Covered by [Passwords](../design/compositions/reusable/passwords.md), line 12.
 
 ```reaction
-when Sessioning.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.Register:accepted#3
+when SignIn.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.Register:accepted#3
 where
   earlier, RequestBoundary.request (password, path: "/auth/register", requestId, username)
 then
@@ -376,7 +401,7 @@ Authored path: `reusable.passwords.entering.SignIn`.
 ```reaction
 when Authenticating.authenticate (password, user), asked by reusable.passwords.entering.SignIn:known
 then
-  Sessioning.start (subject: user)
+  SignIn.start (subject: user)
 ```
 
 ### reusable.passwords.entering.SignIn:known#3
@@ -386,7 +411,7 @@ Authored path: `reusable.passwords.entering.SignIn`.
 - Covered by [Passwords](../design/compositions/reusable/passwords.md), line 13.
 
 ```reaction
-when Sessioning.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.SignIn:known#2
+when SignIn.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.SignIn:known#2
 where
   earlier, RequestBoundary.request (password, path: "/auth/login", requestId, username)
 then

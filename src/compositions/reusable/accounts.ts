@@ -4,13 +4,13 @@ import { where } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../../concepts.ts";
 import { textInput } from "./inputs.ts";
 
-const { Registering, Sessioning } = concepts;
+const { Registering, SignIn } = concepts;
 
 const Me = endpoint(
   "/auth/me",
   ({ session, user, username }) =>
     receive({ session })
-      .then(Sessioning.use({ session }).responds({ subject: user }))
+      .then(SignIn.use({ session }).responds({ subject: user }))
       .then(
         where(Registering._username({ user }).is({ username })).then(respond({ username })),
       ),
@@ -21,7 +21,7 @@ const SignOut = endpoint(
   "/auth/logout",
   ({ session }) =>
     receive({ session })
-      .then(Sessioning.end({ session }).responds({}))
+      .then(SignIn.end({ session }).responds({}))
       .then(respond({})),
   { validators: { input: textInput } },
 );

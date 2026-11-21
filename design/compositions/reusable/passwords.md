@@ -1,6 +1,6 @@
 # Passwords
 
-Ben signs up with a username and a password. Registering stores his username, and Authenticating stores a verifier derived from his password. These endpoints call both, then start a session with Sessioning. An app copies this composition with [accounts](accounts.md), and its frontend shows `frontend/src/reusable/PasswordForm.vue`.
+Ben signs up with a username and a password. Registering stores his username, and Authenticating stores a verifier derived from his password. These endpoints call both, then start a session with SignIn. An app copies this composition with [accounts](accounts.md), and its frontend shows `frontend/src/reusable/PasswordForm.vue`.
 
 The [register endpoint](reaction:reusable.passwords.entering.Register) first calls `Authenticating._acceptable`. When the password is too short or too long, the request is refused with `INVALID_PASSWORD` before anyone is registered, because the engine doesn't undo `Registering.register` when a later action in the same request is refused. Otherwise the endpoint registers the username, sets the password for the new user, and starts a session. Because the endpoint always registers a new user, nobody can sign up with a username someone else already has: the request is refused by `Registering.register` with `USERNAME_TAKEN`. For any caller, a password outside those lengths is still refused by `Authenticating.set` with `INVALID_PASSWORD`, and a second password for the same user with `PASSWORD_SET`.
 
