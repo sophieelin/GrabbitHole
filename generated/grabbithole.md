@@ -187,9 +187,9 @@ Defined in [Registering](../design/concepts/Registering.md), line 1.
 
 - `Registering` — instance of `Registering` — [GrabbitHole types](../design/types.md), line 12.
 
-### Sessioning
+### SignIn
 
-Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
+Defined in [SignIn](../design/concepts/SignIn.md), line 1.
 
 #### Actions
 
@@ -201,7 +201,7 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 17.
+- `SignIn` — instance of `SignIn` — [GrabbitHole types](../design/types.md), line 17.
   - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 18.
 
 ## Application types
@@ -241,7 +241,7 @@ Authored path: `reusable.accounts.identifying.Me`.
 ```reaction
 when RequestBoundary.request (path: "/auth/me", requestId, session)
 then
-  Sessioning.use (session)
+  SignIn.use (session)
 ```
 
 ### reusable.accounts.identifying.Me#2
@@ -251,7 +251,7 @@ Authored path: `reusable.accounts.identifying.Me`.
 - Covered by [Accounts](../design/compositions/reusable/accounts.md), line 8.
 
 ```reaction
-when Sessioning.use (session, subject: user), asked by reusable.accounts.identifying.Me
+when SignIn.use (session, subject: user), asked by reusable.accounts.identifying.Me
 where
   Registering._username (user) has (username)
   earlier, RequestBoundary.request (path: "/auth/me", requestId, session)
@@ -268,7 +268,7 @@ Authored path: `reusable.accounts.leaving.SignOut`.
 ```reaction
 when RequestBoundary.request (path: "/auth/logout", requestId, session)
 then
-  Sessioning.end (session)
+  SignIn.end (session)
 ```
 
 ### reusable.accounts.leaving.SignOut#2
@@ -278,7 +278,7 @@ Authored path: `reusable.accounts.leaving.SignOut`.
 - Covered by [Accounts](../design/compositions/reusable/accounts.md), line 14.
 
 ```reaction
-when Sessioning.end (session), asked by reusable.accounts.leaving.SignOut
+when SignIn.end (session), asked by reusable.accounts.leaving.SignOut
 where
   earlier, RequestBoundary.request (path: "/auth/logout", requestId, session)
 then
@@ -322,7 +322,7 @@ Authored path: `reusable.passwords.entering.Register`.
 ```reaction
 when Authenticating.set (password, user), asked by reusable.passwords.entering.Register:accepted#2
 then
-  Sessioning.start (subject: user)
+  SignIn.start (subject: user)
 ```
 
 ### reusable.passwords.entering.Register:accepted#4
@@ -332,7 +332,7 @@ Authored path: `reusable.passwords.entering.Register`.
 - Covered by [Passwords](../design/compositions/reusable/passwords.md), line 12.
 
 ```reaction
-when Sessioning.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.Register:accepted#3
+when SignIn.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.Register:accepted#3
 where
   earlier, RequestBoundary.request (password, path: "/auth/register", requestId, username)
 then
@@ -376,7 +376,7 @@ Authored path: `reusable.passwords.entering.SignIn`.
 ```reaction
 when Authenticating.authenticate (password, user), asked by reusable.passwords.entering.SignIn:known
 then
-  Sessioning.start (subject: user)
+  SignIn.start (subject: user)
 ```
 
 ### reusable.passwords.entering.SignIn:known#3
@@ -386,7 +386,7 @@ Authored path: `reusable.passwords.entering.SignIn`.
 - Covered by [Passwords](../design/compositions/reusable/passwords.md), line 13.
 
 ```reaction
-when Sessioning.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.SignIn:known#2
+when SignIn.start (subject: user, expiresAt, session), asked by reusable.passwords.entering.SignIn:known#2
 where
   earlier, RequestBoundary.request (password, path: "/auth/login", requestId, username)
 then

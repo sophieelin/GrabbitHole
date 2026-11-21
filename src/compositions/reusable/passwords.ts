@@ -3,7 +3,7 @@ import { no, where } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../../concepts.ts";
 import { textInput } from "./inputs.ts";
 
-const { Registering, Authenticating, Sessioning } = concepts;
+const { Registering, Authenticating } = concepts;
 
 const Register = endpoint(
   "/auth/register",
@@ -12,7 +12,7 @@ const Register = endpoint(
       where(Authenticating._acceptable({ password }).is({ acceptable: true }))
         .then(Registering.register({ username }).responds({ user }))
         .then(Authenticating.set({ user, password }).responds({}))
-        .then(Sessioning.start({ subject: user }).responds({ session, expiresAt }))
+        .then(concepts.SignIn.start({ subject: user }).responds({ session, expiresAt }))
         .then(respond({ user, session, expiresAt }))
         .named("accepted"),
       where(Authenticating._acceptable({ password }).is({ acceptable: false }))
@@ -28,7 +28,7 @@ const SignIn = endpoint(
     receive({ username, password }).then(
       where(Registering._byUsername({ username }).is({ user }))
         .then(Authenticating.authenticate({ user, password }).responds({}))
-        .then(Sessioning.start({ subject: user }).responds({ session, expiresAt }))
+        .then(concepts.SignIn.start({ subject: user }).responds({ session, expiresAt }))
         .then(respond({ user, session, expiresAt }))
         .named("known"),
       where(no(Registering._byUsername({ username })))

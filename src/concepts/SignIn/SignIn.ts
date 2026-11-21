@@ -16,13 +16,13 @@ interface SessionDocument<Subject> {
 }
 
 /** Lets people stay signed in across requests without sending their password each time. */
-export class SessioningConcept<Subject extends string> {
+export class SignInConcept<Subject extends string> {
   private readonly sessions: Collection<SessionDocument<Subject>>;
   private indexes: Promise<unknown> | undefined;
 
   constructor(
     database: Db,
-    name = "Sessioning",
+    name = "SignIn",
     private readonly clock: () => Date = () => new Date(),
   ) {
     this.sessions = database.collection(`${name.toLowerCase()}.sessions`);
