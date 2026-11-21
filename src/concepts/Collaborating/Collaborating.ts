@@ -546,37 +546,32 @@ export class CollaboratingConcept<
   }
 
   async _canReview({
-    project,
-    user,
-  }: {
-    project: Project;
-    user: User;
-  }) {
-    const found = await this.projects.findOne({
-      _id: project,
-    });
+  project,
+  user,
+}: {
+  project: Project;
+  user: User;
+}) {
+  const found = await this.projects.findOne({ _id: project });
 
-    return [{
-      allowed: found?.reviewers.includes(user) ?? false,
-    }];
-  }
+  return {
+    allowed: found?.reviewers.includes(user) ?? false,
+  };
+}
 
-  async _canView({
-    project,
-    user,
-  }: {
-    project: Project;
-    user: User;
-  }) {
-    const found = await this.projects.findOne({
-      _id: project,
-    });
+ async _canView({
+  project,
+  user,
+}: {
+  project: Project;
+  user: User;
+}) {
+  const found = await this.projects.findOne({ _id: project });
 
-    return [{
-      allowed: found?.members.includes(user) ?? false,
-    }];
-  }
-
+  return {
+    allowed: found?.members.includes(user) ?? false,
+  };
+}
   async _getItem({
     project,
   }: {

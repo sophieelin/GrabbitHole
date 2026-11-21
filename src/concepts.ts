@@ -12,13 +12,51 @@ import { sessioning } from "./concepts/Sessioning/registry.ts";
  * `src/concepts/<Name>/` with a `registry.ts`, add it here and to `design/types.md`,
  * then run `bun run generate` and `bun run check`.
  */
-export const applicationConceptSet = conceptSet({
-  Registering: registering,
-  Authenticating: authenticating,
-  SignIn: signIn,
-  DiscoveryLinking: discoveryLinking,
-  Collaborating: collaborating,
-  Contributing: contributing,
-  Sessioning: sessioning,
-});
-export const { concepts } = applicationConceptSet;
+export const applicationConceptSet = conceptSet(
+  {
+    Registering: registering,
+    Authenticating: authenticating,
+    SignIn: signIn,
+    DiscoveryLinking: discoveryLinking,
+    Collaborating: collaborating,
+    Contributing: contributing,
+    Sessioning: sessioning,
+  },
+  {
+    makeMergeGraphChange: ({ other }: { other: string }) =>
+      JSON.stringify({
+        operation: "MERGE_GRAPH",
+        other,
+      }),
+
+
+parseMergeGraphChange: ({ change }: { change: string }): string => {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(change);
+  } catch {
+    throw new Error("Invalid proposed change: malformed JSON.");
+  }
+
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !("operation" in parsed) ||
+    parsed.operation !== "MERGE_GRAPH" ||
+    !("other" in parsed) ||
+    typeof parsed.other !== "string" ||
+    parsed.other.length === 0
+  ) {
+    throw new Error("Invalid proposed change: expected MERGE_GRAPH.");
+  }
+
+  return parsed.other;
+},
+
+  },
+
+  
+);
+
+export const { concepts, computations } = applicationConceptSet;

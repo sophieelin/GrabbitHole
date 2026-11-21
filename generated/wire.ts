@@ -5,6 +5,7 @@ import type { applicationConceptSet as ApplicationConceptSet } from "../src/conc
 
 type AtPath<T, P extends readonly string[]> = P extends readonly [infer H extends string, ...infer R extends string[]] ? H extends keyof T ? AtPath<T[H], R> : H extends `${number}` ? T extends readonly (infer Item)[] ? AtPath<Item, R> : never : never : T;
 type QueryRow<T> = T extends readonly (infer Row)[] ? Row : T;
+type AllOf<T extends readonly unknown[]> = T extends readonly [infer Head, ...infer Rest] ? Head & AllOf<Rest> : unknown;
 type OneOf<T extends readonly unknown[]> = T[number];
 type Jsonify<T> = T extends Date ? string : T extends null | boolean | number | string ? T : T extends (...args: never[]) => unknown ? never : T extends readonly (infer Item)[] ? Jsonify<Item>[] : T extends object ? { [K in keyof T]: Jsonify<T[K]> } : never;
 
@@ -53,6 +54,34 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "INVALID_INPUT" | "INVALID_PASSWORD" | "INVALID_USERNAME" | "PASSWORD_SET" | "USERNAME_TAKEN" };
   };
+  "/projects/contributions/accept": {
+    input: {
+      "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["accept"]>[0], ["proposal"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" | "SAME_GRAPH" };
+  };
+  "/projects/contributions/reject": {
+    input: {
+      "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["proposal"]>]>>;
+      "reason": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["reason"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" };
+  };
+  "/projects/contributions/submit": {
+    input: {
+      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
 };
 
 export type HttpAppWideError = never;
@@ -89,5 +118,30 @@ export type GrabbitHoleWireHttp = {
       "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["start"]>[0], ["subject"]>>;
     };
     error: { error: HttpAppWideError | "CONFLICT" | "INVALID_REQUEST" };
+  };
+  "/projects/contributions/accept": {
+    input: {
+      "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["accept"]>[0], ["proposal"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/reject": {
+    input: {
+      "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["proposal"]>]>>;
+      "reason": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["reason"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit": {
+    input: {
+      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
 };

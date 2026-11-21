@@ -235,6 +235,11 @@ Concrete types:
 
 - `Text` — [GrabbitHole types](../design/types.md), line 8.
 
+## Computations
+
+- `makeMergeGraphChange(other: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 41.
+- `parseMergeGraphChange(change: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 44.
+
 ## Reactions
 
 ### DeliverFaultToAsker
@@ -255,6 +260,270 @@ where
   earlier, RequestBoundary.request (requestId)
 then
   RequestBoundary.respond (error: message, requestId)
+```
+
+### projectContributions.Accept
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.Accept:alreadyAccepted#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (status: "ACCEPTED", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+then
+  RequestBoundary.respond (error: "PROPOSAL_NOT_PENDING", requestId)
+```
+
+### projectContributions.Accept:alreadyRejected#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (status: "REJECTED", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+then
+  RequestBoundary.respond (error: "PROPOSAL_NOT_PENDING", requestId)
+```
+
+### projectContributions.Accept:approved#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  other is parseMergeGraphChange (change)
+  DiscoveryLinking._graph (graph: other)
+then
+  DiscoveryLinking.mergeGraph (other, target)
+```
+
+### projectContributions.Accept:approved#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when DiscoveryLinking.mergeGraph (other, target), asked by projectContributions.Accept:approved#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approved#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approved#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:denied#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.Reject
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.Reject:alreadyAccepted#2
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Reject
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+  Contributing._proposal (proposal) has (status: "ACCEPTED", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+then
+  RequestBoundary.respond (error: "PROPOSAL_NOT_PENDING", requestId)
+```
+
+### projectContributions.Reject:alreadyRejected#2
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Reject
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+  Contributing._proposal (proposal) has (status: "REJECTED", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+then
+  RequestBoundary.respond (error: "PROPOSAL_NOT_PENDING", requestId)
+```
+
+### projectContributions.Reject:denied#2
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Reject
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+  Contributing._proposal (proposal) has (target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.Reject:rejected#2
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Reject
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+  Contributing._proposal (proposal) has (status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+then
+  Contributing.reject (proposal, reason, reviewer: user)
+```
+
+### projectContributions.Reject:rejected#3
+
+Authored path: `projectContributions.Reject`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when Contributing.reject (proposal, reason, reviewer: user), asked by projectContributions.Reject:rejected#2
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.SubmitGraph
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+
+```reaction
+when RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitGraph:allowed#2
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._graph (graph: other)
+  change is makeMergeGraphChange (other)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitGraph:allowed#3
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitGraph:allowed#2
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitGraph:denied#2
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
 ```
 
 ### projectGraphs.CreateProjectGraph
@@ -467,3 +736,6 @@ not listed here have no explicit input contract.
 - `/auth/logout` — requires `session`
 - `/auth/me` — requires `session`
 - `/auth/register` — requires `password`, `username`
+- `/projects/contributions/accept` — requires `proposal`, `session`
+- `/projects/contributions/reject` — requires `proposal`, `reason`, `session`
+- `/projects/contributions/submit` — requires `other`, `project`, `session`
