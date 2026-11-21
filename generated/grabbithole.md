@@ -257,6 +257,30 @@ then
   RequestBoundary.respond (error: message, requestId)
 ```
 
+### projectGraphs.CreateProjectGraph
+
+Authored path: `projectGraphs.CreateProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
+
+```reaction
+when Collaborating.createProject (name, project)
+then
+  DiscoveryLinking.createGraph (name)
+```
+
+### projectGraphs.CreateProjectGraph#2
+
+Authored path: `projectGraphs.CreateProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
+
+```reaction
+when DiscoveryLinking.createGraph (name, graph), asked by projectGraphs.CreateProjectGraph
+where
+  earlier, Collaborating.createProject (name, project)
+then
+  Collaborating.setItem (item: graph, project)
+```
+
 ### reusable.accounts.identifying.Me
 
 Authored path: `reusable.accounts.identifying.Me`.

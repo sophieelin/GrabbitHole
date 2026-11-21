@@ -16,6 +16,7 @@ export default {
       new URL("./design/types.md", import.meta.url),
       new URL("./design/compositions/reusable/accounts.md", import.meta.url),
       new URL("./design/compositions/reusable/passwords.md", import.meta.url),
+      new URL("./design/compositions/project-graphs.md", import.meta.url),
     ],
   },
   projections: [httpWire({ policy: grabbitHolePolicy("http://localhost:3000"), name: "GrabbitHoleWireHttp" })],
