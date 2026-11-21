@@ -237,8 +237,15 @@ Concrete types:
 
 ## Computations
 
-- `makeMergeGraphChange(other: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 41.
-- `parseMergeGraphChange(change: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 44.
+- `decodeChange(change: String) : Record` — [Project contributions](../design/compositions/project-contributions.md), line 165.
+- `makeAddConnectionChange(source: String, destination: String, contributor: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 171.
+- `makeAddConnectionNoteChange(connection: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 180.
+- `makeAddSourceNoteChange(source: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 177.
+- `makeEditNoteChange(note: String, text: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 162.
+- `makeMergeGraphChange(other: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 159.
+- `makeRemoveConnectionChange(connection: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 174.
+- `makeRemoveNoteChange(note: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 183.
+- `makeRemoveSourceChange(source: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 168.
 
 ## Reactions
 
@@ -265,8 +272,8 @@ then
 ### projectContributions.Accept
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
@@ -277,8 +284,8 @@ then
 ### projectContributions.Accept:alreadyAccepted#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -294,8 +301,8 @@ then
 ### projectContributions.Accept:alreadyRejected#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -311,8 +318,8 @@ then
 ### projectContributions.Accept:approved#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -321,7 +328,7 @@ where
   Contributing._proposal (proposal) has (change, status: "PENDING", target)
   Collaborating._getProjectByItem (item: target) has (project)
   Collaborating._canReview (project, user) has (allowed: true)
-  other is parseMergeGraphChange (change)
+  (operation: "MERGE_GRAPH", other) is decodeChange (change)
   DiscoveryLinking._graph (graph: other)
 then
   DiscoveryLinking.mergeGraph (other, target)
@@ -330,8 +337,8 @@ then
 ### projectContributions.Accept:approved#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when DiscoveryLinking.mergeGraph (other, target), asked by projectContributions.Accept:approved#2
@@ -345,8 +352,8 @@ then
 ### projectContributions.Accept:approved#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approved#3
@@ -356,11 +363,348 @@ then
   RequestBoundary.respond (requestId)
 ```
 
+### projectContributions.Accept:approvedConnection#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (contributor, destination, operation: "ADD_CONNECTION", source) is decodeChange (change)
+  DiscoveryLinking._source (source) has (graph: target)
+  DiscoveryLinking._source (source: destination) has (graph: target)
+then
+  DiscoveryLinking.addConnection (contributor, destination, graph: target, source)
+```
+
+### projectContributions.Accept:approvedConnection#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.addConnection (contributor, destination, graph: target, source), asked by projectContributions.Accept:approvedConnection#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedConnection#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnection#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedConnectionNote#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (author, connection, operation: "ADD_CONNECTION_NOTE", text) is decodeChange (change)
+  DiscoveryLinking._connection (connection) has (graph: target)
+then
+  DiscoveryLinking.addNoteToConnection (author, connection, text)
+```
+
+### projectContributions.Accept:approvedConnectionNote#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.addNoteToConnection (author, connection, text), asked by projectContributions.Accept:approvedConnectionNote#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedConnectionNote#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnectionNote#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedConnectionRemoval#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (connection, operation: "REMOVE_CONNECTION") is decodeChange (change)
+  DiscoveryLinking._connection (connection) has (graph: target)
+then
+  DiscoveryLinking.removeConnection (connection, graph: target)
+```
+
+### projectContributions.Accept:approvedConnectionRemoval#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.removeConnection (connection, graph: target), asked by projectContributions.Accept:approvedConnectionRemoval#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedConnectionRemoval#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnectionRemoval#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedNoteEdit#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (note, operation: "EDIT_NOTE", text) is decodeChange (change)
+  DiscoveryLinking._note (note) has (graph: target)
+then
+  DiscoveryLinking.editNote (note, text)
+```
+
+### projectContributions.Accept:approvedNoteEdit#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.editNote (note, text), asked by projectContributions.Accept:approvedNoteEdit#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedNoteEdit#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedNoteEdit#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedNoteRemoval#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (note, operation: "REMOVE_NOTE") is decodeChange (change)
+  DiscoveryLinking._note (note) has (graph: target)
+then
+  DiscoveryLinking.removeNote (note)
+```
+
+### projectContributions.Accept:approvedNoteRemoval#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.removeNote (note), asked by projectContributions.Accept:approvedNoteRemoval#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedNoteRemoval#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedNoteRemoval#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedSourceNote#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (author, operation: "ADD_SOURCE_NOTE", source, text) is decodeChange (change)
+  DiscoveryLinking._source (source) has (graph: target)
+then
+  DiscoveryLinking.addNoteToSource (author, source, text)
+```
+
+### projectContributions.Accept:approvedSourceNote#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.addNoteToSource (author, source, text), asked by projectContributions.Accept:approvedSourceNote#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedSourceNote#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedSourceNote#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectContributions.Accept:approvedSourceRemoval#2
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.Accept
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+  Contributing._proposal (proposal) has (change, status: "PENDING", target)
+  Collaborating._getProjectByItem (item: target) has (project)
+  Collaborating._canReview (project, user) has (allowed: true)
+  (operation: "REMOVE_SOURCE", source) is decodeChange (change)
+  DiscoveryLinking._source (source) has (graph: target)
+then
+  DiscoveryLinking.removeSource (graph: target, source)
+```
+
+### projectContributions.Accept:approvedSourceRemoval#3
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when DiscoveryLinking.removeSource (graph: target, source), asked by projectContributions.Accept:approvedSourceRemoval#2
+where
+  earlier, SignIn.use (session, subject: user), asked by projectContributions.Accept
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  Contributing.accept (proposal, reviewer: user)
+```
+
+### projectContributions.Accept:approvedSourceRemoval#4
+
+Authored path: `projectContributions.Accept`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+
+```reaction
+when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedSourceRemoval#3
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
 ### projectContributions.Accept:denied#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 30.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -376,8 +720,8 @@ then
 ### projectContributions.Reject
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
@@ -388,8 +732,8 @@ then
 ### projectContributions.Reject:alreadyAccepted#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -405,8 +749,8 @@ then
 ### projectContributions.Reject:alreadyRejected#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -422,8 +766,8 @@ then
 ### projectContributions.Reject:denied#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -439,8 +783,8 @@ then
 ### projectContributions.Reject:rejected#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -456,8 +800,8 @@ then
 ### projectContributions.Reject:rejected#3
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 27.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
 
 ```reaction
 when Contributing.reject (proposal, reason, reviewer: user), asked by projectContributions.Reject:rejected#2
@@ -465,6 +809,184 @@ where
   earlier, RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
 then
   RequestBoundary.respond (requestId)
+```
+
+### projectContributions.SubmitConnection
+
+Authored path: `projectContributions.SubmitConnection`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+
+```reaction
+when RequestBoundary.request (destination, path: "/projects/contributions/submit-connection", project, requestId, session, source)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitConnection:allowed#2
+
+Authored path: `projectContributions.SubmitConnection`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnection
+where
+  earlier, RequestBoundary.request (destination, path: "/projects/contributions/submit-connection", project, requestId, session, source)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._source (source) has (graph: target)
+  DiscoveryLinking._source (source: destination) has (graph: target)
+  change is makeAddConnectionChange (contributor: user, destination, source)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitConnection:allowed#3
+
+Authored path: `projectContributions.SubmitConnection`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnection:allowed#2
+where
+  earlier, RequestBoundary.request (destination, path: "/projects/contributions/submit-connection", project, requestId, session, source)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitConnection:denied#2
+
+Authored path: `projectContributions.SubmitConnection`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnection
+where
+  earlier, RequestBoundary.request (destination, path: "/projects/contributions/submit-connection", project, requestId, session, source)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitConnectionNote
+
+Authored path: `projectContributions.SubmitConnectionNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+
+```reaction
+when RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-note", project, requestId, session, text)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitConnectionNote:allowed#2
+
+Authored path: `projectContributions.SubmitConnectionNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionNote
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-note", project, requestId, session, text)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._connection (connection) has (graph: target)
+  change is makeAddConnectionNoteChange (author: user, connection, text)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitConnectionNote:allowed#3
+
+Authored path: `projectContributions.SubmitConnectionNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnectionNote:allowed#2
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-note", project, requestId, session, text)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitConnectionNote:denied#2
+
+Authored path: `projectContributions.SubmitConnectionNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionNote
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-note", project, requestId, session, text)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitConnectionRemoval
+
+Authored path: `projectContributions.SubmitConnectionRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+
+```reaction
+when RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-removal", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitConnectionRemoval:allowed#2
+
+Authored path: `projectContributions.SubmitConnectionRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionRemoval
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-removal", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._connection (connection) has (graph: target)
+  change is makeRemoveConnectionChange (connection)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitConnectionRemoval:allowed#3
+
+Authored path: `projectContributions.SubmitConnectionRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnectionRemoval:allowed#2
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-removal", project, requestId, session)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitConnectionRemoval:denied#2
+
+Authored path: `projectContributions.SubmitConnectionRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionRemoval
+where
+  earlier, RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-removal", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
 ```
 
 ### projectContributions.SubmitGraph
@@ -521,6 +1043,242 @@ Authored path: `projectContributions.SubmitGraph`.
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
 where
   earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitNoteEdit
+
+Authored path: `projectContributions.SubmitNoteEdit`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+
+```reaction
+when RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitNoteEdit:allowed#2
+
+Authored path: `projectContributions.SubmitNoteEdit`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteEdit
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._note (note) has (graph: target)
+  change is makeEditNoteChange (note, text)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitNoteEdit:allowed#3
+
+Authored path: `projectContributions.SubmitNoteEdit`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitNoteEdit:allowed#2
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitNoteEdit:denied#2
+
+Authored path: `projectContributions.SubmitNoteEdit`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteEdit
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitNoteRemoval
+
+Authored path: `projectContributions.SubmitNoteRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when RequestBoundary.request (note, path: "/projects/contributions/submit-note-removal", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitNoteRemoval:allowed#2
+
+Authored path: `projectContributions.SubmitNoteRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteRemoval
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-removal", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._note (note) has (graph: target)
+  change is makeRemoveNoteChange (note)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitNoteRemoval:allowed#3
+
+Authored path: `projectContributions.SubmitNoteRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitNoteRemoval:allowed#2
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-removal", project, requestId, session)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitNoteRemoval:denied#2
+
+Authored path: `projectContributions.SubmitNoteRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteRemoval
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-removal", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitSourceNote
+
+Authored path: `projectContributions.SubmitSourceNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+
+```reaction
+when RequestBoundary.request (path: "/projects/contributions/submit-source-note", project, requestId, session, source, text)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitSourceNote:allowed#2
+
+Authored path: `projectContributions.SubmitSourceNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceNote
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-note", project, requestId, session, source, text)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._source (source) has (graph: target)
+  change is makeAddSourceNoteChange (author: user, source, text)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitSourceNote:allowed#3
+
+Authored path: `projectContributions.SubmitSourceNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitSourceNote:allowed#2
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-note", project, requestId, session, source, text)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitSourceNote:denied#2
+
+Authored path: `projectContributions.SubmitSourceNote`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceNote
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-note", project, requestId, session, source, text)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitSourceRemoval
+
+Authored path: `projectContributions.SubmitSourceRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+
+```reaction
+when RequestBoundary.request (path: "/projects/contributions/submit-source-removal", project, requestId, session, source)
+then
+  SignIn.use (session)
+```
+
+### projectContributions.SubmitSourceRemoval:allowed#2
+
+Authored path: `projectContributions.SubmitSourceRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceRemoval
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-removal", project, requestId, session, source)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._source (source) has (graph: target)
+  change is makeRemoveSourceChange (source)
+then
+  Contributing.propose (change, target, user)
+```
+
+### projectContributions.SubmitSourceRemoval:allowed#3
+
+Authored path: `projectContributions.SubmitSourceRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+
+```reaction
+when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitSourceRemoval:allowed#2
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-removal", project, requestId, session, source)
+then
+  RequestBoundary.respond (proposal, requestId)
+```
+
+### projectContributions.SubmitSourceRemoval:denied#2
+
+Authored path: `projectContributions.SubmitSourceRemoval`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceRemoval
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/submit-source-removal", project, requestId, session, source)
   Collaborating._canView (project, user) has (allowed: false)
 then
   RequestBoundary.respond (error: "FORBIDDEN", requestId)
@@ -739,3 +1497,10 @@ not listed here have no explicit input contract.
 - `/projects/contributions/accept` — requires `proposal`, `session`
 - `/projects/contributions/reject` — requires `proposal`, `reason`, `session`
 - `/projects/contributions/submit` — requires `other`, `project`, `session`
+- `/projects/contributions/submit-connection` — requires `destination`, `project`, `session`, `source`
+- `/projects/contributions/submit-connection-note` — requires `connection`, `project`, `session`, `text`
+- `/projects/contributions/submit-connection-removal` — requires `connection`, `project`, `session`
+- `/projects/contributions/submit-note-edit` — requires `note`, `project`, `session`, `text`
+- `/projects/contributions/submit-note-removal` — requires `note`, `project`, `session`
+- `/projects/contributions/submit-source-note` — requires `project`, `session`, `source`, `text`
+- `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`

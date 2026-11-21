@@ -620,5 +620,760 @@ test("a rejected proposal cannot be rejected twice", async () => {
 
 
 
+test("an authorized reviewer accepts a proposed note edit", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  // Create a project and retrieve its main graph.
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Add a source and a note to the main graph.
+  const { source } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/roman-history",
+      contributor: maya.user,
+    }),
+  );
+
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToSource({
+      source,
+      author: maya.user,
+      text: "Original research note",
+    }),
+  );
+
+  // Submit a proposed edit.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-note-edit"]({
+      session: maya.session,
+      project,
+      note,
+      text: "Updated research note",
+    }),
+  );
+
+  // The original note must remain unchanged before approval.
+  expect(await DiscoveryLinking._note({ note })).toEqual([
+    {
+      graph: target,
+      author: maya.user,
+      text: "Original research note",
+    },
+  ]);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the proposed edit.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The note should now contain the approved text.
+  expect(await DiscoveryLinking._note({ note })).toEqual([
+    {
+      graph: target,
+      author: maya.user,
+      text: "Updated research note",
+    },
+  ]);
+
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+  expect(accepted?.reviewer).toBe(maya.user);
+});
+
+
+test("an authorized reviewer accepts a source removal", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Create two sources in the main graph.
+  const { source: sourceA } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-a",
+      contributor: maya.user,
+    }),
+  );
+
+  const { source: sourceB } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-b",
+      contributor: maya.user,
+    }),
+  );
+
+  // Connect the two sources.
+  const { connection } = ok(
+    await DiscoveryLinking.addConnection({
+      graph: target,
+      source: sourceA,
+      destination: sourceB,
+      contributor: maya.user,
+    }),
+  );
+
+  // Add a note to the source being removed.
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToSource({
+      source: sourceA,
+      author: maya.user,
+      text: "Important research note",
+    }),
+  );
+
+  // Submit a source removal proposal.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-source-removal"]({
+      session: maya.session,
+      project,
+      source: sourceA,
+    }),
+  );
+
+  // Nothing should be deleted before approval.
+  expect(await DiscoveryLinking._source({ source: sourceA }))
+    .toHaveLength(1);
+  expect(await DiscoveryLinking._connection({ connection }))
+    .toHaveLength(1);
+  expect(await DiscoveryLinking._note({ note }))
+    .toHaveLength(1);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the removal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The source, its connection, and its note are removed.
+  expect(await DiscoveryLinking._source({ source: sourceA }))
+    .toEqual([]);
+  expect(await DiscoveryLinking._connection({ connection }))
+    .toEqual([]);
+  expect(await DiscoveryLinking._note({ note }))
+    .toEqual([]);
+
+  // The unrelated source remains.
+  expect(await DiscoveryLinking._source({ source: sourceB }))
+    .toHaveLength(1);
+
+  // The proposal is accepted.
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+});
+
+
+
+test("rejecting a note edit leaves the original note unchanged", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  const { source } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/roman-history",
+      contributor: maya.user,
+    }),
+  );
+
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToSource({
+      source,
+      author: maya.user,
+      text: "Original note",
+    }),
+  );
+
+  // Submit a proposed edit.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-note-edit"]({
+      session: maya.session,
+      project,
+      note,
+      text: "Proposed replacement",
+    }),
+  );
+
+  // Reject the proposal.
+  ok(
+    await api["/projects/contributions/reject"]({
+      session: maya.session,
+      proposal,
+      reason: "The original note is more accurate",
+    }),
+  );
+
+  // The original note must remain unchanged.
+  const [storedNote] = await DiscoveryLinking._note({ note });
+  expect(storedNote?.text).toBe("Original note");
+
+  // The proposal records the rejection.
+  const [storedProposal] = await Contributing._proposal({ proposal });
+  expect(storedProposal?.status).toBe("REJECTED");
+  expect(storedProposal?.reviewer).toBe(maya.user);
+  expect(storedProposal?.reason).toBe(
+    "The original note is more accurate",
+  );
+});
+
+
+test("an authorized reviewer accepts a proposed connection", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Create two sources in the main graph.
+  const { source: sourceA } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-a",
+      contributor: maya.user,
+    }),
+  );
+
+  const { source: sourceB } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-b",
+      contributor: maya.user,
+    }),
+  );
+
+  // Propose a connection.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-connection"]({
+      session: maya.session,
+      project,
+      source: sourceA,
+      destination: sourceB,
+    }),
+  );
+
+  // The proposal exists, but no connection has been created.
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  expect(await DiscoveryLinking._connections({ graph: target }))
+    .toEqual([]);
+
+  // Approve the proposal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The connection now exists.
+  const connections =
+    await DiscoveryLinking._connections({ graph: target });
+
+  expect(connections).toHaveLength(1);
+  expect(connections[0]?.source).toBe(sourceA);
+  expect(connections[0]?.destination).toBe(sourceB);
+
+  const contributors =
+  await DiscoveryLinking._connectionContributors({
+    connection: connections[0]!.connection,
+  });
+
+expect(contributors).toEqual([
+  { contributor: maya.user },
+]);
+
+  // The proposal is accepted.
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+  expect(accepted?.reviewer).toBe(maya.user);
+});
+
+
+
+
+test("an authorized reviewer accepts a connection removal", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Create two sources.
+  const { source: sourceA } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-a",
+      contributor: maya.user,
+    }),
+  );
+
+  const { source: sourceB } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-b",
+      contributor: maya.user,
+    }),
+  );
+
+  // Connect them.
+  const { connection } = ok(
+    await DiscoveryLinking.addConnection({
+      graph: target,
+      source: sourceA,
+      destination: sourceB,
+      contributor: maya.user,
+    }),
+  );
+
+  // Add a note to the connection.
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToConnection({
+      connection,
+      author: maya.user,
+      text: "These articles support each other",
+    }),
+  );
+
+  // Propose removing the connection.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-connection-removal"]({
+      session: maya.session,
+      project,
+      connection,
+    }),
+  );
+
+  // Nothing should change before approval.
+  expect(await DiscoveryLinking._connection({ connection }))
+    .toHaveLength(1);
+  expect(await DiscoveryLinking._note({ note }))
+    .toHaveLength(1);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve removal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // Connection and its note are deleted.
+  expect(await DiscoveryLinking._connection({ connection }))
+    .toEqual([]);
+  expect(await DiscoveryLinking._note({ note }))
+    .toEqual([]);
+
+  // Both sources remain in the graph.
+  expect(await DiscoveryLinking._source({ source: sourceA }))
+    .toHaveLength(1);
+  expect(await DiscoveryLinking._source({ source: sourceB }))
+    .toHaveLength(1);
+
+  // Proposal is accepted.
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+  expect(accepted?.reviewer).toBe(maya.user);
+});
+
+
+
+test("an authorized reviewer accepts a proposed source note", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Create a source in the project's main graph.
+  const { source } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/roman-history",
+      contributor: maya.user,
+    }),
+  );
+
+  // Submit a proposed note.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-source-note"]({
+      session: maya.session,
+      project,
+      source,
+      text: "Roman concrete was highly durable",
+    }),
+  );
+
+  // No note should exist before approval.
+  expect(await DiscoveryLinking._sourceNotes({ source }))
+    .toEqual([]);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the proposal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The note is created with the original proposer as author.
+  const notes = await DiscoveryLinking._sourceNotes({ source });
+
+  expect(notes).toHaveLength(1);
+  expect(notes[0]?.text).toBe(
+    "Roman concrete was highly durable",
+  );
+  expect(notes[0]?.author).toBe(maya.user);
+
+  // Proposal is accepted.
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+  expect(accepted?.reviewer).toBe(maya.user);
+});
+
+
+test("an authorized reviewer accepts a proposed connection note", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Create two sources.
+  const { source: sourceA } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-a",
+      contributor: maya.user,
+    }),
+  );
+
+  const { source: sourceB } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-b",
+      contributor: maya.user,
+    }),
+  );
+
+  // Create a connection between them.
+  const { connection } = ok(
+    await DiscoveryLinking.addConnection({
+      graph: target,
+      source: sourceA,
+      destination: sourceB,
+      contributor: maya.user,
+    }),
+  );
+
+  // Propose adding a note to the connection.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-connection-note"]({
+      session: maya.session,
+      project,
+      connection,
+      text: "These sources provide supporting evidence",
+    }),
+  );
+
+  // The note must not exist before approval.
+  expect(await DiscoveryLinking._connectionNotes({ connection }))
+    .toEqual([]);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the proposal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The note now exists and credits Maya.
+  const notes =
+    await DiscoveryLinking._connectionNotes({ connection });
+
+  expect(notes).toHaveLength(1);
+  expect(notes[0]?.text).toBe(
+    "These sources provide supporting evidence",
+  );
+  expect(notes[0]?.author).toBe(maya.user);
+
+  // The proposal is accepted.
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+  expect(accepted?.reviewer).toBe(maya.user);
+});
+
+
+
+test("an authorized reviewer accepts a source note removal", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  const { source } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/roman-history",
+      contributor: maya.user,
+    }),
+  );
+
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToSource({
+      source,
+      author: maya.user,
+      text: "Original source note",
+    }),
+  );
+
+  // Propose removing the note.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-note-removal"]({
+      session: maya.session,
+      project,
+      note,
+    }),
+  );
+
+  // The note remains until approval.
+  expect(await DiscoveryLinking._note({ note }))
+    .toHaveLength(1);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the removal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The note is removed, but the source remains.
+  expect(await DiscoveryLinking._note({ note }))
+    .toEqual([]);
+  expect(await DiscoveryLinking._source({ source }))
+    .toHaveLength(1);
+
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+});
+
+
+test("an authorized reviewer accepts a connection note removal", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  const { source: sourceA } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-a",
+      contributor: maya.user,
+    }),
+  );
+
+  const { source: sourceB } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/article-b",
+      contributor: maya.user,
+    }),
+  );
+
+  const { connection } = ok(
+    await DiscoveryLinking.addConnection({
+      graph: target,
+      source: sourceA,
+      destination: sourceB,
+      contributor: maya.user,
+    }),
+  );
+
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToConnection({
+      connection,
+      author: maya.user,
+      text: "Original connection note",
+    }),
+  );
+
+  // Propose removing the note.
+  const { proposal } = ok(
+    await api["/projects/contributions/submit-note-removal"]({
+      session: maya.session,
+      project,
+      note,
+    }),
+  );
+
+  // The note remains until approval.
+  expect(await DiscoveryLinking._note({ note }))
+    .toHaveLength(1);
+
+  const [pending] = await Contributing._proposal({ proposal });
+  expect(pending?.status).toBe("PENDING");
+
+  // Approve the removal.
+  ok(
+    await api["/projects/contributions/accept"]({
+      session: maya.session,
+      proposal,
+    }),
+  );
+
+  // The note is removed, but the connection remains.
+  expect(await DiscoveryLinking._note({ note }))
+    .toEqual([]);
+  expect(await DiscoveryLinking._connection({ connection }))
+    .toHaveLength(1);
+
+  const [accepted] = await Contributing._proposal({ proposal });
+  expect(accepted?.status).toBe("ACCEPTED");
+});
+
+
 
 });

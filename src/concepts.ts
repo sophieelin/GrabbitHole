@@ -30,31 +30,331 @@ export const applicationConceptSet = conceptSet(
       }),
 
 
-parseMergeGraphChange: ({ change }: { change: string }): string => {
-  let parsed: unknown;
+    
 
-  try {
-    parsed = JSON.parse(change);
-  } catch {
-    throw new Error("Invalid proposed change: malformed JSON.");
-  }
+      makeEditNoteChange: ({
+          note,
+          text,
+        }: {
+          note: string;
+          text: string;
+        }) =>
+          JSON.stringify({
+            operation: "EDIT_NOTE",
+            note,
+            text,
+          }),
+
+
+
+
+
+decodeChange: ({ change }: { change: string }): {
+  operation: string;
+  other: string | null;
+  note: string | null;
+  text: string | null;
+  source: string | null;
+  destination: string | null;
+  contributor: string | null;
+  connection: string | null;
+  author: string | null;
+} => {
+  const parsed: unknown = JSON.parse(change);
 
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    !("operation" in parsed) ||
-    parsed.operation !== "MERGE_GRAPH" ||
-    !("other" in parsed) ||
-    typeof parsed.other !== "string" ||
-    parsed.other.length === 0
+    !("operation" in parsed)
   ) {
-    throw new Error("Invalid proposed change: expected MERGE_GRAPH.");
+    throw new Error("Invalid proposed change.");
   }
 
-  return parsed.other;
+  if (
+    parsed.operation === "MERGE_GRAPH" &&
+    "other" in parsed &&
+    typeof parsed.other === "string" &&
+    parsed.other.length > 0
+  ) {
+    return {
+      operation: "MERGE_GRAPH",
+      other: parsed.other,
+      note: null,
+      text: null,
+      source: null,
+      destination: null,
+      contributor: null,
+      connection: null,
+      author: null,
+    };
+  }
+
+  if (
+    parsed.operation === "EDIT_NOTE" &&
+    "note" in parsed &&
+    typeof parsed.note === "string" &&
+    parsed.note.length > 0 &&
+    "text" in parsed &&
+    typeof parsed.text === "string"
+  ) {
+    return {
+      operation: "EDIT_NOTE",
+      other: null,
+      note: parsed.note,
+      text: parsed.text,
+      source: null,
+      destination: null,
+      contributor: null,
+      connection: null,
+      author: null,
+    };
+  }
+
+
+if (
+  parsed.operation === "REMOVE_SOURCE" &&
+  "source" in parsed &&
+  typeof parsed.source === "string" &&
+  parsed.source.length > 0
+) {
+  return {
+    operation: "REMOVE_SOURCE",
+    other: null,
+    note: null,
+    text: null,
+    source: parsed.source,
+    destination: null,
+    contributor: null,
+    connection: null,
+    author: null,
+  };
+
+
+}
+
+
+if (
+  parsed.operation === "ADD_CONNECTION" &&
+  "source" in parsed &&
+  typeof parsed.source === "string" &&
+  parsed.source.length > 0 &&
+  "destination" in parsed &&
+  typeof parsed.destination === "string" &&
+  parsed.destination.length > 0 &&
+  "contributor" in parsed &&
+  typeof parsed.contributor === "string" &&
+  parsed.contributor.length > 0
+) {
+  return {
+    operation: "ADD_CONNECTION",
+    other: null,
+    note: null,
+    text: null,
+    source: parsed.source,
+    destination: parsed.destination,
+    contributor: parsed.contributor,
+    connection: null,
+    author: null,
+  };
+}
+
+
+if (
+  parsed.operation === "REMOVE_CONNECTION" &&
+  "connection" in parsed &&
+  typeof parsed.connection === "string" &&
+  parsed.connection.length > 0
+) {
+  return {
+    operation: "REMOVE_CONNECTION",
+    other: null,
+    note: null,
+    text: null,
+    source: null,
+    destination: null,
+    contributor: null,
+    connection: parsed.connection,
+    author: null,
+  };
+}
+
+
+if (
+  parsed.operation === "ADD_SOURCE_NOTE" &&
+  "source" in parsed &&
+  typeof parsed.source === "string" &&
+  parsed.source.length > 0 &&
+  "text" in parsed &&
+  typeof parsed.text === "string" &&
+  "author" in parsed &&
+  typeof parsed.author === "string" &&
+  parsed.author.length > 0
+) {
+  return {
+    operation: "ADD_SOURCE_NOTE",
+    other: null,
+    note: null,
+    text: parsed.text,
+    source: parsed.source,
+    destination: null,
+    contributor: null,
+    connection: null,
+    author: parsed.author,
+  };
+}
+
+
+if (
+  parsed.operation === "ADD_CONNECTION_NOTE" &&
+  "connection" in parsed &&
+  typeof parsed.connection === "string" &&
+  parsed.connection.length > 0 &&
+  "text" in parsed &&
+  typeof parsed.text === "string" &&
+  "author" in parsed &&
+  typeof parsed.author === "string" &&
+  parsed.author.length > 0
+) {
+  return {
+    operation: "ADD_CONNECTION_NOTE",
+    other: null,
+    note: null,
+    text: parsed.text,
+    source: null,
+    destination: null,
+    contributor: null,
+    connection: parsed.connection,
+    author: parsed.author,
+  };
+}
+
+
+
+if (
+  parsed.operation === "REMOVE_NOTE" &&
+  "note" in parsed &&
+  typeof parsed.note === "string" &&
+  parsed.note.length > 0
+) {
+  return {
+    operation: "REMOVE_NOTE",
+    other: null,
+    note: parsed.note,
+    text: null,
+    source: null,
+    destination: null,
+    contributor: null,
+    connection: null,
+    author: null,
+  };
+}
+
+
+
+
+
+
+  throw new Error("Unsupported or invalid proposed change.");
 },
 
+
+makeRemoveSourceChange: ({
+  source,
+}: {
+  source: string;
+}): string =>
+  JSON.stringify({
+    operation: "REMOVE_SOURCE",
+    source,
+  }),
+
+
+makeAddConnectionChange: ({
+  source,
+  destination,
+  contributor,
+}: {
+  source: string;
+  destination: string;
+  contributor: string;
+}): string =>
+  JSON.stringify({
+    operation: "ADD_CONNECTION",
+    source,
+    destination,
+    contributor,
+  }),
+
+
+
+makeRemoveConnectionChange: ({
+  connection,
+}: {
+  connection: string;
+}): string =>
+  JSON.stringify({
+    operation: "REMOVE_CONNECTION",
+    connection,
+  }),
+
+
+
+makeAddSourceNoteChange: ({
+  source,
+  text,
+  author,
+}: {
+  source: string;
+  text: string;
+  author: string;
+}): string =>
+  JSON.stringify({
+    operation: "ADD_SOURCE_NOTE",
+    source,
+    text,
+    author,
+  }),
+
+
+
+makeAddConnectionNoteChange: ({
+  connection,
+  text,
+  author,
+}: {
+  connection: string;
+  text: string;
+  author: string;
+}): string =>
+  JSON.stringify({
+    operation: "ADD_CONNECTION_NOTE",
+    connection,
+    text,
+    author,
+  }),
+
+
+
+makeRemoveNoteChange: ({
+  note,
+}: {
+  note: string;
+}): string =>
+  JSON.stringify({
+    operation: "REMOVE_NOTE",
+    note,
+  }),
+
+
+
+
+
+
+
   },
+
+
+  
 
   
 );

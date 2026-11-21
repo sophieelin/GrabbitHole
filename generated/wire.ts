@@ -60,7 +60,7 @@ export type GrabbitHoleWire = {
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: Record<string, never>;
-    error: { error: AppWideError | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" | "SAME_GRAPH" };
+    error: { error: AppWideError | "CONNECTION_EXISTS" | "CONNECTION_NOT_FOUND" | "CONNECTION_NOT_IN_GRAPH" | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOTE_NOT_FOUND" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" | "SAME_GRAPH" | "SOURCE_NOT_FOUND" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/contributions/reject": {
     input: {
@@ -76,6 +76,87 @@ export type GrabbitHoleWire = {
       "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-connection": {
+    input: {
+      "destination": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["destination"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-connection-note": {
+    input: {
+      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-connection-removal": {
+    input: {
+      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveConnectionChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-note-edit": {
+    input: {
+      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-note-removal": {
+    input: {
+      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-source-note": {
+    input: {
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/contributions/submit-source-removal": {
+    input: {
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveSourceChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
@@ -138,6 +219,80 @@ export type GrabbitHoleWireHttp = {
     input: {
       "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-connection": {
+    input: {
+      "destination": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["destination"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-connection-note": {
+    input: {
+      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-connection-removal": {
+    input: {
+      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveConnectionChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-note-edit": {
+    input: {
+      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-note-removal": {
+    input: {
+      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-source-note": {
+    input: {
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["text"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-source-removal": {
+    input: {
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveSourceChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
