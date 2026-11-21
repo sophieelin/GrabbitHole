@@ -17,6 +17,10 @@
 - [!Design Summary](f3/design-summary.md)
 - [!Development Plan](f3/development-plan.md)
 
+# F4
+
+- [Alpha Development Plan](f4/development-plan.md)
+
 # The app
 
 GrabbitHole is built on [sync-engine](https://github.com/mit-sdg/sync-engine), with a Vue frontend. The code started as a copy of [ConceptBox](https://github.com/mit-sdg/conceptbox), the course's example app (MIT license, in `LICENSE-conceptbox`), cut down to signing in, with our own concepts added on top.
