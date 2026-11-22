@@ -112,7 +112,33 @@ const RecordVisit = endpoint(
   { validators: { input: textInput } },
 );
 
+/** The session's owner stops it, so it records no more visits. */
+const StopSession = endpoint(
+  "/sessions/stop",
+  ({ session, user, browsingSession }) =>
+    receive({ session, browsingSession })
+      .then(SignIn.use({ session }).responds({ subject: user }))
+      .then(
+        where(Sessioning._session({ session: browsingSession }).is({ user }))
+          .then(Sessioning.stopSession({ session: browsingSession }).responds({}))
+          .then(respond({}))
+          .named("owner"),
+
+        where(
+          Sessioning._session({ session: browsingSession }).is({}),
+          no(Sessioning._session({ session: browsingSession }).is({ user })),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("notOwner"),
+
+        where(no(Sessioning._session({ session: browsingSession })))
+          .then(respond({ error: "SESSION_NOT_FOUND" }))
+          .named("unknownSession"),
+      ),
+  { validators: { input: textInput } },
+);
+
 export const composition = {
   recording: { CreateSessionGraph, RecordSessionSource, RecordSessionOrigin, RecordSessionConnection },
-  browsing: { StartSession, RecordVisit },
+  browsing: { StartSession, RecordVisit, StopSession },
 };

@@ -127,3 +127,52 @@ describe("Recording a visit", () => {
     ).toEqual({ error: "NOT_SIGNED_IN" });
   });
 });
+
+describe("Stopping a browsing session", () => {
+  test("the owner stops it, and later visits are refused", async () => {
+    const { application, api, researcher, start } = await setup();
+    const browsingSession = await start();
+
+    ok(await api["/sessions/stop"]({ session: researcher.session, browsingSession }));
+
+    expect(await application.concepts.Sessioning._session({ session: browsingSession })).toEqual([
+      { user: researcher.user, status: "STOPPED" },
+    ]);
+    expect(
+      await api["/sessions/visit"]({ session: researcher.session, browsingSession, url: ARTICLE, sourceUrl: ARTICLE }),
+    ).toMatchObject({ error: "SESSION_NOT_ACTIVE" });
+  });
+
+  test("stopping it twice is refused", async () => {
+    const { api, researcher, start } = await setup();
+    const browsingSession = await start();
+    ok(await api["/sessions/stop"]({ session: researcher.session, browsingSession }));
+
+    expect(await api["/sessions/stop"]({ session: researcher.session, browsingSession })).toMatchObject({
+      error: "SESSION_NOT_ACTIVE",
+    });
+  });
+
+  test("someone else cannot stop it, and an unknown session is not found", async () => {
+    const { application, api, researcher, other, start } = await setup();
+    const browsingSession = await start();
+
+    expect(await api["/sessions/stop"]({ session: other.session, browsingSession })).toEqual({ error: "FORBIDDEN" });
+    expect(await application.concepts.Sessioning._session({ session: browsingSession })).toEqual([
+      { user: researcher.user, status: "ACTIVE" },
+    ]);
+    expect(
+      await api["/sessions/stop"]({ session: researcher.session, browsingSession: "no-such-session" as Session }),
+    ).toEqual({ error: "SESSION_NOT_FOUND" });
+  });
+
+  test("a caller who is not signed in cannot stop it", async () => {
+    const { api, researcher, start } = await setup();
+    const browsingSession = await start();
+    ok(await api.auth.logout({ session: researcher.session }));
+
+    expect(await api["/sessions/stop"]({ session: researcher.session, browsingSession })).toEqual({
+      error: "NOT_SIGNED_IN",
+    });
+  });
+});

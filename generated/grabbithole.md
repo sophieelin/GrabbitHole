@@ -1619,7 +1619,7 @@ then
 
 Authored path: `sessioning.browsing.RecordVisit`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 19.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 23.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 25.
 
 ```reaction
 when RequestBoundary.request (browsingSession, path: "/sessions/visit", requestId, session, sourceUrl, url)
@@ -1631,7 +1631,7 @@ then
 
 Authored path: `sessioning.browsing.RecordVisit`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 19.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 23.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 25.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by sessioning.browsing.RecordVisit
@@ -1647,7 +1647,7 @@ then
 
 Authored path: `sessioning.browsing.RecordVisit`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 19.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 23.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 25.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by sessioning.browsing.RecordVisit
@@ -1662,7 +1662,7 @@ then
 
 Authored path: `sessioning.browsing.RecordVisit`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 19.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 23.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 25.
 
 ```reaction
 when Sessioning.recordVisit (session: browsingSession, sourceUrl, url), asked by sessioning.browsing.RecordVisit:owner#2
@@ -1676,7 +1676,7 @@ then
 
 Authored path: `sessioning.browsing.RecordVisit`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 19.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 23.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 25.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by sessioning.browsing.RecordVisit
@@ -1692,7 +1692,7 @@ then
 Authored path: `sessioning.browsing.StartSession`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 22.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 24.
 
 ```reaction
 when RequestBoundary.request (path: "/sessions/start", requestId, session)
@@ -1705,7 +1705,7 @@ then
 Authored path: `sessioning.browsing.StartSession`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 22.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 24.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by sessioning.browsing.StartSession
@@ -1718,7 +1718,7 @@ then
 Authored path: `sessioning.browsing.StartSession`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 22.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 24.
 
 ```reaction
 when Sessioning.startSession (user, session: browsingSession), asked by sessioning.browsing.StartSession#2
@@ -1735,7 +1735,7 @@ then
 Authored path: `sessioning.browsing.StartSession`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
-- Covered by [Sessioning](../design/compositions/sessioning.md), line 22.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 24.
 
 ```reaction
 when Sessioning.startSession (user, session: browsingSession), asked by sessioning.browsing.StartSession#2
@@ -1745,6 +1745,78 @@ where
   earlier, RequestBoundary.request (path: "/sessions/start", requestId, session)
 then
   RequestBoundary.respond (browsingSession, requestId)
+```
+
+### sessioning.browsing.StopSession
+
+Authored path: `sessioning.browsing.StopSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 21.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 26.
+
+```reaction
+when RequestBoundary.request (browsingSession, path: "/sessions/stop", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### sessioning.browsing.StopSession:notOwner#2
+
+Authored path: `sessioning.browsing.StopSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 21.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 26.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessioning.browsing.StopSession
+where
+  earlier, RequestBoundary.request (browsingSession, path: "/sessions/stop", requestId, session)
+  Sessioning._session (session: browsingSession)
+  no Sessioning._session (session: browsingSession) has (user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### sessioning.browsing.StopSession:owner#2
+
+Authored path: `sessioning.browsing.StopSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 21.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 26.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessioning.browsing.StopSession
+where
+  earlier, RequestBoundary.request (browsingSession, path: "/sessions/stop", requestId, session)
+  Sessioning._session (session: browsingSession) has (user)
+then
+  Sessioning.stopSession (session: browsingSession)
+```
+
+### sessioning.browsing.StopSession:owner#3
+
+Authored path: `sessioning.browsing.StopSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 21.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 26.
+
+```reaction
+when Sessioning.stopSession (session: browsingSession), asked by sessioning.browsing.StopSession:owner#2
+where
+  earlier, RequestBoundary.request (browsingSession, path: "/sessions/stop", requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### sessioning.browsing.StopSession:unknownSession#2
+
+Authored path: `sessioning.browsing.StopSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 21.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 26.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessioning.browsing.StopSession
+where
+  earlier, RequestBoundary.request (browsingSession, path: "/sessions/stop", requestId, session)
+  no Sessioning._session (session: browsingSession)
+then
+  RequestBoundary.respond (error: "SESSION_NOT_FOUND", requestId)
 ```
 
 ### sessioning.recording.CreateSessionGraph
@@ -1847,4 +1919,5 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
 - `/projects/graph` — requires `project`, `session`
 - `/sessions/start` — requires `session`
+- `/sessions/stop` — requires `browsingSession`, `session`
 - `/sessions/visit` — requires `browsingSession`, `session`, `sourceUrl`, `url`

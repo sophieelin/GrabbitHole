@@ -18,7 +18,10 @@ The extension [starts a session](reaction:sessioning.browsing.StartSession) for 
 
 While a session is active, the extension [records each visit](reaction:sessioning.browsing.RecordVisit) with `Sessioning.recordVisit`, sending the visited `url` and the `sourceUrl` it came from. Only the session's owner, as `Sessioning._session` gives it, can record into a session: anyone else gets `FORBIDDEN`, and an unknown session gets `SESSION_NOT_FOUND`. A visit to a stopped session is refused by Sessioning with `SESSION_NOT_ACTIVE`. Every request names a `sourceUrl`; for a page with no page before it, the extension sends the page itself, which Sessioning records with no connection. The endpoint answers once Sessioning has recorded the visit. [Copying it into the session's graph](reaction:sessioning.recording.RecordSessionConnection) finishes in the same request's work right after, so a graph read sent immediately after the answer may not include it yet.
 
+When the researcher is done, the extension [stops the session](reaction:sessioning.browsing.StopSession) with `Sessioning.stopSession`, and it records no more visits. The same owner check applies: anyone else gets `FORBIDDEN`, and an unknown session gets `SESSION_NOT_FOUND`. Stopping a session that has already stopped is refused by Sessioning with `SESSION_NOT_ACTIVE`.
+
 ```endpoints
 sessioning.browsing.StartSession at /sessions/start
 sessioning.browsing.RecordVisit at /sessions/visit
+sessioning.browsing.StopSession at /sessions/stop
 ```

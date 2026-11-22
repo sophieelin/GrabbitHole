@@ -214,6 +214,14 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "INVALID_INPUT" | "ITEM_ALREADY_ASSOCIATED" | "ITEM_ALREADY_SET" | "NOT_SIGNED_IN" | "SESSION_GRAPH_NOT_FOUND" | "SESSION_NOT_FOUND" };
   };
+  "/sessions/stop": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["stopSession"]>[0], ["session"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SESSION_NOT_ACTIVE" | "SESSION_NOT_FOUND" };
+  };
   "/sessions/visit": {
     input: {
       "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["session"]>]>>;
@@ -407,6 +415,13 @@ export type GrabbitHoleWireHttp = {
       "browsingSession": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["startSession"]>>, ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>[0], ["session"]>]>>;
     };
     error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/stop": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["stopSession"]>[0], ["session"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/sessions/visit": {
     input: {
