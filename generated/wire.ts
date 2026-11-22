@@ -214,6 +214,16 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "INVALID_INPUT" | "ITEM_ALREADY_ASSOCIATED" | "ITEM_ALREADY_SET" | "NOT_SIGNED_IN" | "SESSION_GRAPH_NOT_FOUND" | "SESSION_NOT_FOUND" };
   };
+  "/sessions/visit": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["session"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "sourceUrl": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["sourceUrl"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["url"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "CONNECTION_EXISTS" | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SESSION_NOT_ACTIVE" | "SESSION_NOT_FOUND" | "SOURCE_EXISTS" | "SOURCE_NOT_IN_GRAPH" };
+  };
 };
 
 export type HttpAppWideError = never;
@@ -397,5 +407,14 @@ export type GrabbitHoleWireHttp = {
       "browsingSession": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["startSession"]>>, ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>[0], ["session"]>]>>;
     };
     error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/visit": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["session"]>]>>;
+      "sourceUrl": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["sourceUrl"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["url"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
 };

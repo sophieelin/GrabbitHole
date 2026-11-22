@@ -16,6 +16,9 @@ The browser extension records a session through these endpoints. Each identifies
 
 The extension [starts a session](reaction:sessioning.browsing.StartSession) for the signed-in user with `Sessioning.startSession`. The endpoint waits for the rest of the request's work to finish, so it answers with the new `browsingSession` only after [the session's graph](reaction:sessioning.recording.CreateSessionGraph) is associated, and a visit recorded right after starting is always copied into the graph. If the graph could not be associated, it answers `SESSION_GRAPH_NOT_FOUND` instead.
 
+While a session is active, the extension [records each visit](reaction:sessioning.browsing.RecordVisit) with `Sessioning.recordVisit`, sending the visited `url` and the `sourceUrl` it came from. Only the session's owner, as `Sessioning._session` gives it, can record into a session: anyone else gets `FORBIDDEN`, and an unknown session gets `SESSION_NOT_FOUND`. A visit to a stopped session is refused by Sessioning with `SESSION_NOT_ACTIVE`. Every request names a `sourceUrl`; for a page with no page before it, the extension sends the page itself, which Sessioning records with no connection. The endpoint answers once Sessioning has recorded the visit. [Copying it into the session's graph](reaction:sessioning.recording.RecordSessionConnection) finishes in the same request's work right after, so a graph read sent immediately after the answer may not include it yet.
+
 ```endpoints
 sessioning.browsing.StartSession at /sessions/start
+sessioning.browsing.RecordVisit at /sessions/visit
 ```

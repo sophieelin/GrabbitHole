@@ -81,7 +81,38 @@ const StartSession = endpoint(
   { validators: { input: textInput } },
 );
 
+/**
+ * The session's owner records a visit. `sourceUrl` is the page the visit came from; for a page
+ * with no page before it, the extension sends the page itself, which Sessioning records with no
+ * connection. It answers once Sessioning has recorded the visit; copying it into the session's graph
+ * finishes right after.
+ */
+const RecordVisit = endpoint(
+  "/sessions/visit",
+  ({ session, user, browsingSession, url, sourceUrl }) =>
+    receive({ session, browsingSession, url, sourceUrl })
+      .then(SignIn.use({ session }).responds({ subject: user }))
+      .then(
+        where(Sessioning._session({ session: browsingSession }).is({ user }))
+          .then(Sessioning.recordVisit({ session: browsingSession, url, sourceUrl }).responds({}))
+          .then(respond({}))
+          .named("owner"),
+
+        where(
+          Sessioning._session({ session: browsingSession }).is({}),
+          no(Sessioning._session({ session: browsingSession }).is({ user })),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("notOwner"),
+
+        where(no(Sessioning._session({ session: browsingSession })))
+          .then(respond({ error: "SESSION_NOT_FOUND" }))
+          .named("unknownSession"),
+      ),
+  { validators: { input: textInput } },
+);
+
 export const composition = {
   recording: { CreateSessionGraph, RecordSessionSource, RecordSessionOrigin, RecordSessionConnection },
-  browsing: { StartSession },
+  browsing: { StartSession, RecordVisit },
 };
