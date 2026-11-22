@@ -3,7 +3,9 @@ import type { Db } from "mongodb";
 import { composition as accounts } from "./compositions/reusable/accounts.ts";
 import { composition as passwords } from "./compositions/reusable/passwords.ts";
 import { composition as sessioning } from "./compositions/sessioning.ts";
+import { composition as projectGraphs } from "./compositions/project-graphs.ts";
 import { applicationConceptSet } from "./concepts.ts";
+import { composition as projectContributions } from "./compositions/project-contributions.ts";
 
 /**
  * Builds GrabbitHole on a database; the HTTP server, the tests, and `sync-engine check` all use it.
@@ -21,6 +23,8 @@ export function assembleGrabbitHole(
     composition: {
       reusable: { accounts, passwords },
       sessioning,
+      projectGraphs,
+      projectContributions,
     },
   });
 }

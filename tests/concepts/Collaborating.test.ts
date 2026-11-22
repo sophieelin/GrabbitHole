@@ -302,7 +302,7 @@ test("removing a member also removes their reviewer permission", async () => {
     { user: maya },
   ]);
   expect(await collaborating._canReview({ project, user: sam }))
-    .toEqual([{ allowed: false }]);
+    .toEqual({ allowed: false });
 });
 
 test("the project owner cannot be removed", async () => {
@@ -335,7 +335,7 @@ test("reviewer permissions can be granted and revoked", async () => {
   await collaborating.acceptInvitation({ invitation, user: sam });
 
   expect(await collaborating._canReview({ project, user: sam }))
-    .toEqual([{ allowed: false }]);
+    .toEqual({ allowed: false });
 
   await collaborating.grantReviewer({
     project,
@@ -344,7 +344,7 @@ test("reviewer permissions can be granted and revoked", async () => {
   });
 
   expect(await collaborating._canReview({ project, user: sam }))
-    .toEqual([{ allowed: true }]);
+    .toEqual({ allowed: true });
 
   await collaborating.revokeReviewer({
     project,
@@ -353,11 +353,11 @@ test("reviewer permissions can be granted and revoked", async () => {
   });
 
   expect(await collaborating._canReview({ project, user: sam }))
-    .toEqual([{ allowed: false }]);
+    .toEqual({ allowed: false });
 
   // Revoking review permission does not remove membership.
   expect(await collaborating._canView({ project, user: sam }))
-    .toEqual([{ allowed: true }]);
+    .toEqual({ allowed: true });
 });
 
 test("non-owners cannot manage project permissions", async () => {
@@ -400,9 +400,9 @@ test("reviewer permissions require membership", async () => {
   ).rejects.toThrow(NotMember);
 
   expect(await collaborating._canView({ project, user: sam }))
-    .toEqual([{ allowed: false }]);
+    .toEqual({ allowed: false });
   expect(await collaborating._canReview({ project, user: sam }))
-    .toEqual([{ allowed: false }]);
+    .toEqual({ allowed: false });
 });
 
 
