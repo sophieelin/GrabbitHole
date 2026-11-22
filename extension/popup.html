@@ -7,13 +7,22 @@
       body { font: 13px system-ui, sans-serif; width: 260px; margin: 12px; }
       label { display: block; margin-bottom: 4px; }
       input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
-      #status { margin-top: 8px; white-space: pre-wrap; }
+      #status, #session { margin-top: 8px; white-space: pre-wrap; }
+      #pages { margin: 8px 0 0; padding-left: 22px; max-height: 260px; overflow-y: auto; }
+      #pages li { margin-bottom: 4px; overflow-wrap: anywhere; }
+      #pages .from { display: block; color: #666; font-size: 11px; }
+      hr { margin: 12px 0; border: none; border-top: 1px solid #ddd; }
     </style>
   </head>
   <body>
     <label for="server">Server address</label>
     <input id="server" type="url" placeholder="http://localhost:3000" />
     <button id="check">Check sign-in</button>
+    <hr />
+    <button id="start">Start session</button>
+    <button id="stop" hidden>Stop session</button>
+    <div id="session"></div>
+    <ol id="pages"></ol>
     <div id="status"></div>
     <script src="popup.js" type="module"></script>
   </body>
