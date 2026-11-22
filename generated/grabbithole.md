@@ -439,6 +439,80 @@ then
   RequestBoundary.respond (error: "INVALID_CREDENTIALS", requestId)
 ```
 
+### sessioning.recording.CreateSessionGraph
+
+Authored path: `sessioning.recording.CreateSessionGraph`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 5.
+
+```reaction
+when Sessioning.startSession (session)
+then
+  DiscoveryLinking.createGraph (name: "Research Session")
+```
+
+### sessioning.recording.CreateSessionGraph#2
+
+Authored path: `sessioning.recording.CreateSessionGraph`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 5.
+
+```reaction
+when DiscoveryLinking.createGraph (name: "Research Session", graph), asked by sessioning.recording.CreateSessionGraph
+where
+  earlier, Sessioning.startSession (session)
+then
+  Sessioning.setItem (item: graph, session)
+```
+
+### sessioning.recording.RecordSessionConnection
+
+Authored path: `sessioning.recording.RecordSessionConnection`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 9.
+
+```reaction
+when Sessioning.recordVisit (session, sourceUrl, url)
+at the flow's settlement frontier
+where
+  Sessioning._connections (session) has (destination: url, source: sourceUrl)
+  Sessioning._getItem (session) has (item: graph)
+  Sessioning._session (session) has (user)
+  DiscoveryLinking._sourceByUrl (graph, url: sourceUrl) has (source)
+  DiscoveryLinking._sourceByUrl (graph, url) has (source: destination)
+  no DiscoveryLinking._connections (graph) has (destination, source)
+then
+  DiscoveryLinking.addConnection (contributor: user, destination, graph, source)
+```
+
+### sessioning.recording.RecordSessionOrigin
+
+Authored path: `sessioning.recording.RecordSessionOrigin`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 7.
+
+```reaction
+when Sessioning.recordVisit (session, sourceUrl, url)
+where
+  Sessioning._connections (session) has (destination: url, source: sourceUrl)
+  Sessioning._getItem (session) has (item: graph)
+  Sessioning._session (session) has (user)
+  no DiscoveryLinking._sourceByUrl (graph, url: sourceUrl)
+then
+  DiscoveryLinking.addSource (contributor: user, graph, url: sourceUrl)
+```
+
+### sessioning.recording.RecordSessionSource
+
+Authored path: `sessioning.recording.RecordSessionSource`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 7.
+
+```reaction
+when Sessioning.recordVisit (session, url)
+where
+  Sessioning._getItem (session) has (item: graph)
+  Sessioning._session (session) has (user)
+  no DiscoveryLinking._sourceByUrl (graph, url)
+then
+  DiscoveryLinking.addSource (contributor: user, graph, url)
+```
+
 ## Endpoint input contracts
 
 Before recording an action ask, the boundary rejects a body that is not an
