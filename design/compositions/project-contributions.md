@@ -7,6 +7,8 @@ Researchers can propose changes to a shared project's research graph without mod
 
 The [SubmitGraph endpoint](reaction:projectContributions.SubmitGraph) identifies the researcher through `SignIn.use`, verifies project membership through `Collaborating._canView`, retrieves the project's main graph through `Collaborating._getItem`, and verifies that the preliminary graph exists through `DiscoveryLinking._graph`.
 
+The preliminary graph must be the researcher's own browsing-session graph, from a session that has stopped. The endpoint finds the graph's session through `Sessioning._getSessionByItem`, and checks the session's owner and status through `Sessioning._session`. It also checks through `Collaborating._getProjectByItem` that the graph is not a project's main graph. Another user's session graph is refused with `FORBIDDEN`. A session that is still recording is refused with `SESSION_STILL_RECORDING`, so no page recorded after proposing can reach the merge; the researcher stops the session first. A graph that belongs to no session, such as any project's main graph, is refused with `NOT_A_SESSION_GRAPH`.
+
 The application constructs a `MERGE_GRAPH` change containing the preliminary graph's identity and calls `Contributing.propose` with the main graph as the target. The proposal remains `PENDING` until reviewed.
 
 The frontend supplies the project and preliminary graph identities, but the application derives the user from the authenticated session and constructs the change on the backend.

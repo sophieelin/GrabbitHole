@@ -73,14 +73,14 @@ export type GrabbitHoleWire = {
   };
   "/projects/contributions/submit": {
     input: {
-      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "other": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getSessionByItem"]>[0], ["item"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_A_SESSION_GRAPH" | "NOT_SIGNED_IN" | "SESSION_STILL_RECORDING" };
   };
   "/projects/contributions/submit-connection": {
     input: {
@@ -328,13 +328,13 @@ export type GrabbitHoleWireHttp = {
   };
   "/projects/contributions/submit": {
     input: {
-      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "other": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getSessionByItem"]>[0], ["item"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection": {
     input: {

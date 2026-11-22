@@ -1,15 +1,19 @@
 
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
-import { compute, where } from "@mit-sdg/sync-engine/language";
+import { compute, no, where } from "@mit-sdg/sync-engine/language";
 import { concepts, computations } from "../concepts.ts";
 import { textInput } from "./reusable/inputs.ts";
 
-const { SignIn, Collaborating, DiscoveryLinking, Contributing } = concepts;
+const { SignIn, Collaborating, DiscoveryLinking, Contributing, Sessioning } = concepts;
 
-// Submit a preliminary graph for review.
+/**
+ * Submit a preliminary graph for review. The graph must be the submitting user's own session
+ * graph, from a session that has stopped, so no page recorded after proposing reaches the merge.
+ * Another user's session graph, a project's main graph, or any other graph is refused.
+ */
 const SubmitGraph = endpoint(
   "/projects/contributions/submit",
-  ({ session, project, other, user, target, change, proposal }) =>
+  ({ session, project, other, user, target, change, proposal, browsingSession }) =>
     receive({ session, project, other })
       .then(SignIn.use({ session }).responds({ subject: user }))
       .then(
@@ -20,6 +24,9 @@ const SubmitGraph = endpoint(
           Collaborating._getItem({ project }).is({
             item: target,
           }),
+          Sessioning._getSessionByItem({ item: other }).is({ session: browsingSession }),
+          Sessioning._session({ session: browsingSession }).is({ user, status: "STOPPED" }),
+          no(Collaborating._getProjectByItem({ item: other })),
           DiscoveryLinking._graph({ graph: other }).is({}),
           compute(
             computations.makeMergeGraphChange,
@@ -44,6 +51,30 @@ const SubmitGraph = endpoint(
         )
           .then(respond({ error: "FORBIDDEN" }))
           .named("denied"),
+
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Sessioning._getSessionByItem({ item: other }).is({ session: browsingSession }),
+          Sessioning._session({ session: browsingSession }).is({}),
+          no(Sessioning._session({ session: browsingSession }).is({ user })),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("notOwnSession"),
+
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Sessioning._getSessionByItem({ item: other }).is({ session: browsingSession }),
+          Sessioning._session({ session: browsingSession }).is({ user, status: "ACTIVE" }),
+        )
+          .then(respond({ error: "SESSION_STILL_RECORDING" }))
+          .named("stillRecording"),
+
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          no(Sessioning._getSessionByItem({ item: other })),
+        )
+          .then(respond({ error: "NOT_A_SESSION_GRAPH" }))
+          .named("notSessionGraph"),
       ),
   { validators: { input: textInput } },
 );

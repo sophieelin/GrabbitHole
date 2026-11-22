@@ -3,6 +3,23 @@ import { describe, expect, test } from "bun:test";
 import { startGrabbitHole } from "../support/app.ts";
 import { ok } from "../support/reusable/results.ts";
 
+type GrabbitHole = Awaited<ReturnType<typeof startGrabbitHole>>;
+type Researcher = Awaited<ReturnType<GrabbitHole["register"]>>;
+
+/**
+ * A preliminary graph made the way the app makes one: start a browsing session for the researcher,
+ * which creates its graph, then stop it. Only the submitting user's own graph from a stopped
+ * session can be proposed for merging into a project.
+ */
+async function stoppedSessionGraph(application: GrabbitHole["application"], researcher: Researcher) {
+  const { Sessioning } = application.concepts;
+  const { session } = ok(await Sessioning.startSession({ user: researcher.user }));
+  await application.whenIdle();
+  const [row] = await Sessioning._getItem({ session });
+  ok(await Sessioning.stopSession({ session }));
+  return { graph: row!.item };
+}
+
 describe("Project contributions", () => {
   test("a project member can submit a preliminary graph", async () => {
     const { application, api, register } = await startGrabbitHole();
@@ -27,11 +44,7 @@ describe("Project contributions", () => {
     const target = association!.item;
 
     // Create a preliminary graph.
-    const { graph: other } = ok(
-      await DiscoveryLinking.createGraph({
-        name: "Research Session",
-      }),
-    );
+    const { graph: other } = await stoppedSessionGraph(application, maya);
 
 
     // Submit it for review.
@@ -83,11 +96,7 @@ test("a nonmember cannot submit a graph to another project", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Sam's Research",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, sam);
 
   const result = await api["/projects/contributions/submit"]({
     session: sam.session,
@@ -120,11 +129,7 @@ test("an authorized reviewer accepts a graph contribution", async () => {
   const [{ item: target }] = await Collaborating._getItem({ project });
 
   // Create a preliminary graph with a source.
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   await DiscoveryLinking.addSource({
     graph: other,
@@ -210,11 +215,7 @@ test("a nonreviewer cannot accept a contribution", async () => {
   })).toEqual({ allowed: false });
 
   // Maya creates and submits a preliminary graph.
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   await DiscoveryLinking.addSource({
     graph: other,
@@ -266,11 +267,7 @@ test("an accepted proposal cannot be applied twice", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   await DiscoveryLinking.addSource({
     graph: other,
@@ -328,11 +325,7 @@ test("an authorized reviewer can reject a contribution", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   await DiscoveryLinking.addSource({
     graph: other,
@@ -389,11 +382,7 @@ test("a rejected proposal cannot later be accepted", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   await DiscoveryLinking.addSource({
     graph: other,
@@ -469,11 +458,7 @@ test("a nonreviewer cannot reject a contribution", async () => {
   });
 
   // Maya submits a preliminary graph.
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   const { proposal } = ok(
     await api["/projects/contributions/submit"]({
@@ -522,11 +507,7 @@ test("a nonmember cannot reject a contribution", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   const { proposal } = ok(
     await api["/projects/contributions/submit"]({
@@ -578,11 +559,7 @@ test("a rejected proposal cannot be rejected twice", async () => {
 
   const [{ item: target }] = await Collaborating._getItem({ project });
 
-  const { graph: other } = ok(
-    await DiscoveryLinking.createGraph({
-      name: "Research Session",
-    }),
-  );
+  const { graph: other } = await stoppedSessionGraph(application, maya);
 
   const { proposal } = ok(
     await api["/projects/contributions/submit"]({

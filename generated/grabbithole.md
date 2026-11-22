@@ -244,15 +244,15 @@ Concrete types:
 
 ## Computations
 
-- `decodeChange(change: String) : Record` — [Project contributions](../design/compositions/project-contributions.md), line 165.
-- `makeAddConnectionChange(source: String, destination: String, contributor: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 171.
-- `makeAddConnectionNoteChange(connection: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 180.
-- `makeAddSourceNoteChange(source: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 177.
-- `makeEditNoteChange(note: String, text: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 162.
-- `makeMergeGraphChange(other: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 159.
-- `makeRemoveConnectionChange(connection: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 174.
-- `makeRemoveNoteChange(note: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 183.
-- `makeRemoveSourceChange(source: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 168.
+- `decodeChange(change: String) : Record` — [Project contributions](../design/compositions/project-contributions.md), line 167.
+- `makeAddConnectionChange(source: String, destination: String, contributor: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 173.
+- `makeAddConnectionNoteChange(connection: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 182.
+- `makeAddSourceNoteChange(source: String, text: String, author: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 179.
+- `makeEditNoteChange(note: String, text: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 164.
+- `makeMergeGraphChange(other: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 161.
+- `makeRemoveConnectionChange(connection: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 176.
+- `makeRemoveNoteChange(note: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 185.
+- `makeRemoveSourceChange(source: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 170.
 
 ## Formers
 
@@ -327,8 +327,8 @@ then
 ### projectContributions.Accept
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/accept", proposal, requestId, session)
@@ -339,8 +339,8 @@ then
 ### projectContributions.Accept:alreadyAccepted#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -356,8 +356,8 @@ then
 ### projectContributions.Accept:alreadyRejected#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -373,8 +373,8 @@ then
 ### projectContributions.Accept:approved#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -392,8 +392,8 @@ then
 ### projectContributions.Accept:approved#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.mergeGraph (other, target), asked by projectContributions.Accept:approved#2
@@ -407,8 +407,8 @@ then
 ### projectContributions.Accept:approved#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approved#3
@@ -421,8 +421,8 @@ then
 ### projectContributions.Accept:approvedConnection#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -441,8 +441,8 @@ then
 ### projectContributions.Accept:approvedConnection#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.addConnection (contributor, destination, graph: target, source), asked by projectContributions.Accept:approvedConnection#2
@@ -456,8 +456,8 @@ then
 ### projectContributions.Accept:approvedConnection#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnection#3
@@ -470,8 +470,8 @@ then
 ### projectContributions.Accept:approvedConnectionNote#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -489,8 +489,8 @@ then
 ### projectContributions.Accept:approvedConnectionNote#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.addNoteToConnection (author, connection, text), asked by projectContributions.Accept:approvedConnectionNote#2
@@ -504,8 +504,8 @@ then
 ### projectContributions.Accept:approvedConnectionNote#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnectionNote#3
@@ -518,8 +518,8 @@ then
 ### projectContributions.Accept:approvedConnectionRemoval#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -537,8 +537,8 @@ then
 ### projectContributions.Accept:approvedConnectionRemoval#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.removeConnection (connection, graph: target), asked by projectContributions.Accept:approvedConnectionRemoval#2
@@ -552,8 +552,8 @@ then
 ### projectContributions.Accept:approvedConnectionRemoval#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedConnectionRemoval#3
@@ -566,8 +566,8 @@ then
 ### projectContributions.Accept:approvedNoteEdit#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -585,8 +585,8 @@ then
 ### projectContributions.Accept:approvedNoteEdit#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.editNote (note, text), asked by projectContributions.Accept:approvedNoteEdit#2
@@ -600,8 +600,8 @@ then
 ### projectContributions.Accept:approvedNoteEdit#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedNoteEdit#3
@@ -614,8 +614,8 @@ then
 ### projectContributions.Accept:approvedNoteRemoval#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -633,8 +633,8 @@ then
 ### projectContributions.Accept:approvedNoteRemoval#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.removeNote (note), asked by projectContributions.Accept:approvedNoteRemoval#2
@@ -648,8 +648,8 @@ then
 ### projectContributions.Accept:approvedNoteRemoval#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedNoteRemoval#3
@@ -662,8 +662,8 @@ then
 ### projectContributions.Accept:approvedSourceNote#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -681,8 +681,8 @@ then
 ### projectContributions.Accept:approvedSourceNote#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.addNoteToSource (author, source, text), asked by projectContributions.Accept:approvedSourceNote#2
@@ -696,8 +696,8 @@ then
 ### projectContributions.Accept:approvedSourceNote#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedSourceNote#3
@@ -710,8 +710,8 @@ then
 ### projectContributions.Accept:approvedSourceRemoval#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -729,8 +729,8 @@ then
 ### projectContributions.Accept:approvedSourceRemoval#3
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when DiscoveryLinking.removeSource (graph: target, source), asked by projectContributions.Accept:approvedSourceRemoval#2
@@ -744,8 +744,8 @@ then
 ### projectContributions.Accept:approvedSourceRemoval#4
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when Contributing.accept (proposal, reviewer: user), asked by projectContributions.Accept:approvedSourceRemoval#3
@@ -758,8 +758,8 @@ then
 ### projectContributions.Accept:denied#2
 
 Authored path: `projectContributions.Accept`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 142.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 148.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 144.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 150.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Accept
@@ -775,8 +775,8 @@ then
 ### projectContributions.Reject
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/reject", proposal, reason, requestId, session)
@@ -787,8 +787,8 @@ then
 ### projectContributions.Reject:alreadyAccepted#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -804,8 +804,8 @@ then
 ### projectContributions.Reject:alreadyRejected#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -821,8 +821,8 @@ then
 ### projectContributions.Reject:denied#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -838,8 +838,8 @@ then
 ### projectContributions.Reject:rejected#2
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.Reject
@@ -855,8 +855,8 @@ then
 ### projectContributions.Reject:rejected#3
 
 Authored path: `projectContributions.Reject`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 145.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 149.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 147.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 151.
 
 ```reaction
 when Contributing.reject (proposal, reason, reviewer: user), asked by projectContributions.Reject:rejected#2
@@ -869,8 +869,8 @@ then
 ### projectContributions.SubmitConnection
 
 Authored path: `projectContributions.SubmitConnection`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 92.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 101.
 
 ```reaction
 when RequestBoundary.request (destination, path: "/projects/contributions/submit-connection", project, requestId, session, source)
@@ -881,8 +881,8 @@ then
 ### projectContributions.SubmitConnection:allowed#2
 
 Authored path: `projectContributions.SubmitConnection`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 92.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 101.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnection
@@ -900,8 +900,8 @@ then
 ### projectContributions.SubmitConnection:allowed#3
 
 Authored path: `projectContributions.SubmitConnection`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 92.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 101.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnection:allowed#2
@@ -914,8 +914,8 @@ then
 ### projectContributions.SubmitConnection:denied#2
 
 Authored path: `projectContributions.SubmitConnection`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 90.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 99.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 92.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 101.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnection
@@ -929,8 +929,8 @@ then
 ### projectContributions.SubmitConnectionNote
 
 Authored path: `projectContributions.SubmitConnectionNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 41.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 50.
 
 ```reaction
 when RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-note", project, requestId, session, text)
@@ -941,8 +941,8 @@ then
 ### projectContributions.SubmitConnectionNote:allowed#2
 
 Authored path: `projectContributions.SubmitConnectionNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 41.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 50.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionNote
@@ -959,8 +959,8 @@ then
 ### projectContributions.SubmitConnectionNote:allowed#3
 
 Authored path: `projectContributions.SubmitConnectionNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 41.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 50.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnectionNote:allowed#2
@@ -973,8 +973,8 @@ then
 ### projectContributions.SubmitConnectionNote:denied#2
 
 Authored path: `projectContributions.SubmitConnectionNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 39.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 48.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 41.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 50.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionNote
@@ -988,8 +988,8 @@ then
 ### projectContributions.SubmitConnectionRemoval
 
 Authored path: `projectContributions.SubmitConnectionRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 75.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 84.
 
 ```reaction
 when RequestBoundary.request (connection, path: "/projects/contributions/submit-connection-removal", project, requestId, session)
@@ -1000,8 +1000,8 @@ then
 ### projectContributions.SubmitConnectionRemoval:allowed#2
 
 Authored path: `projectContributions.SubmitConnectionRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 75.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 84.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionRemoval
@@ -1018,8 +1018,8 @@ then
 ### projectContributions.SubmitConnectionRemoval:allowed#3
 
 Authored path: `projectContributions.SubmitConnectionRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 75.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 84.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitConnectionRemoval:allowed#2
@@ -1032,8 +1032,8 @@ then
 ### projectContributions.SubmitConnectionRemoval:denied#2
 
 Authored path: `projectContributions.SubmitConnectionRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 73.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 82.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 75.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 84.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitConnectionRemoval
@@ -1048,7 +1048,7 @@ then
 
 Authored path: `projectContributions.SubmitGraph`.
 - Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
 
 ```reaction
 when RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
@@ -1060,7 +1060,7 @@ then
 
 Authored path: `projectContributions.SubmitGraph`.
 - Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
@@ -1068,6 +1068,9 @@ where
   earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
   Collaborating._canView (project, user) has (allowed: true)
   Collaborating._getItem (project) has (item: target)
+  Sessioning._getSessionByItem (item: other) has (session: browsingSession)
+  Sessioning._session (session: browsingSession) has (status: "STOPPED", user)
+  no Collaborating._getProjectByItem (item: other)
   DiscoveryLinking._graph (graph: other)
   change is makeMergeGraphChange (other)
 then
@@ -1078,7 +1081,7 @@ then
 
 Authored path: `projectContributions.SubmitGraph`.
 - Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitGraph:allowed#2
@@ -1092,7 +1095,7 @@ then
 
 Authored path: `projectContributions.SubmitGraph`.
 - Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 15.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
@@ -1103,11 +1106,62 @@ then
   RequestBoundary.respond (error: "FORBIDDEN", requestId)
 ```
 
+### projectContributions.SubmitGraph:notOwnSession#2
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Sessioning._getSessionByItem (item: other) has (session: browsingSession)
+  Sessioning._session (session: browsingSession)
+  no Sessioning._session (session: browsingSession) has (user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectContributions.SubmitGraph:notSessionGraph#2
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  no Sessioning._getSessionByItem (item: other)
+then
+  RequestBoundary.respond (error: "NOT_A_SESSION_GRAPH", requestId)
+```
+
+### projectContributions.SubmitGraph:stillRecording#2
+
+Authored path: `projectContributions.SubmitGraph`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 8.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitGraph
+where
+  earlier, RequestBoundary.request (other, path: "/projects/contributions/submit", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Sessioning._getSessionByItem (item: other) has (session: browsingSession)
+  Sessioning._session (session: browsingSession) has (status: "ACTIVE", user)
+then
+  RequestBoundary.respond (error: "SESSION_STILL_RECORDING", requestId)
+```
+
 ### projectContributions.SubmitNoteEdit
 
 Authored path: `projectContributions.SubmitNoteEdit`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 125.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 134.
 
 ```reaction
 when RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
@@ -1118,8 +1172,8 @@ then
 ### projectContributions.SubmitNoteEdit:allowed#2
 
 Authored path: `projectContributions.SubmitNoteEdit`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 125.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 134.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteEdit
@@ -1136,8 +1190,8 @@ then
 ### projectContributions.SubmitNoteEdit:allowed#3
 
 Authored path: `projectContributions.SubmitNoteEdit`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 125.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 134.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitNoteEdit:allowed#2
@@ -1150,8 +1204,8 @@ then
 ### projectContributions.SubmitNoteEdit:denied#2
 
 Authored path: `projectContributions.SubmitNoteEdit`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 123.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 132.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 125.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 134.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteEdit
@@ -1165,8 +1219,8 @@ then
 ### projectContributions.SubmitNoteRemoval
 
 Authored path: `projectContributions.SubmitNoteRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 33.
 
 ```reaction
 when RequestBoundary.request (note, path: "/projects/contributions/submit-note-removal", project, requestId, session)
@@ -1177,8 +1231,8 @@ then
 ### projectContributions.SubmitNoteRemoval:allowed#2
 
 Authored path: `projectContributions.SubmitNoteRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 33.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteRemoval
@@ -1195,8 +1249,8 @@ then
 ### projectContributions.SubmitNoteRemoval:allowed#3
 
 Authored path: `projectContributions.SubmitNoteRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 33.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitNoteRemoval:allowed#2
@@ -1209,8 +1263,8 @@ then
 ### projectContributions.SubmitNoteRemoval:denied#2
 
 Authored path: `projectContributions.SubmitNoteRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 22.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 31.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 24.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 33.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteRemoval
@@ -1224,8 +1278,8 @@ then
 ### projectContributions.SubmitSourceNote
 
 Authored path: `projectContributions.SubmitSourceNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 58.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 67.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/submit-source-note", project, requestId, session, source, text)
@@ -1236,8 +1290,8 @@ then
 ### projectContributions.SubmitSourceNote:allowed#2
 
 Authored path: `projectContributions.SubmitSourceNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 58.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 67.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceNote
@@ -1254,8 +1308,8 @@ then
 ### projectContributions.SubmitSourceNote:allowed#3
 
 Authored path: `projectContributions.SubmitSourceNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 58.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 67.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitSourceNote:allowed#2
@@ -1268,8 +1322,8 @@ then
 ### projectContributions.SubmitSourceNote:denied#2
 
 Authored path: `projectContributions.SubmitSourceNote`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 56.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 65.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 58.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 67.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceNote
@@ -1283,8 +1337,8 @@ then
 ### projectContributions.SubmitSourceRemoval
 
 Authored path: `projectContributions.SubmitSourceRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 109.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 118.
 
 ```reaction
 when RequestBoundary.request (path: "/projects/contributions/submit-source-removal", project, requestId, session, source)
@@ -1295,8 +1349,8 @@ then
 ### projectContributions.SubmitSourceRemoval:allowed#2
 
 Authored path: `projectContributions.SubmitSourceRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 109.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 118.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceRemoval
@@ -1313,8 +1367,8 @@ then
 ### projectContributions.SubmitSourceRemoval:allowed#3
 
 Authored path: `projectContributions.SubmitSourceRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 109.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 118.
 
 ```reaction
 when Contributing.propose (change, target, user, proposal), asked by projectContributions.SubmitSourceRemoval:allowed#2
@@ -1327,8 +1381,8 @@ then
 ### projectContributions.SubmitSourceRemoval:denied#2
 
 Authored path: `projectContributions.SubmitSourceRemoval`.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 107.
-- Covered by [Project contributions](../design/compositions/project-contributions.md), line 116.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 109.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 118.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by projectContributions.SubmitSourceRemoval
