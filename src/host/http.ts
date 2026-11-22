@@ -10,7 +10,11 @@ import { passwordsHttp } from "../compositions/reusable/passwords.ts";
  *
  * Example: `PROJECT_NOT_FOUND: "NOT_FOUND",`
  */
-const publicErrors = {} as const;
+const publicErrors = {
+  FORBIDDEN: "FORBIDDEN",
+  PROJECT_NOT_FOUND: "NOT_FOUND",
+  PROJECT_GRAPH_NOT_FOUND: "NOT_FOUND",
+} as const;
 
 /**
  * The HTTP settings: the API under /api, each refusal returned as an HTTP category, and the

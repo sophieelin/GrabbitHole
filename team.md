@@ -17,9 +17,6 @@ A: I enjoy problem-solving and being able to turn ideas into things that people 
 **Q: What's one fun fact about you?**  
 A: I ran the Cambridge Half Marathon last year.
 
-**Q: What is something you always wanted to try?**  
-A: 
-
 ## Sophie Lin
 
 ### About Me

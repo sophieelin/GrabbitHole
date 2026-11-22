@@ -247,6 +247,54 @@ Concrete types:
 - `makeRemoveNoteChange(note: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 183.
 - `makeRemoveSourceChange(source: String) : String` — [Project contributions](../design/compositions/project-contributions.md), line 168.
 
+## Formers
+
+_Formers name result shapes evaluated when asked. The source former owns_
+_the authored explanation; this section records the generated shape._
+
+### the research graph (graph)
+
+```former
+Former "the research graph (graph)" — inputs (graph); bindings (name, source, url, sourceContributor, sourceContributorName, sourceNote, sourceNoteAuthor, sourceNoteAuthorName, sourceNoteText, connection, from, to, connectionContributor, connectionContributorName, connectionNote, connectionNoteAuthor, connectionNoteAuthorName, connectionNoteText); promises exactly one record — forms:
+  a record of
+    where DiscoveryLinking._graph (graph) has (name)
+    connections: each DiscoveryLinking._connections (graph) has (connection, destination: to, source: from)
+      form a record of
+        connection
+        contributors: each DiscoveryLinking._connectionContributors (connection) has (contributor: connectionContributor)
+          where Registering._username (user: connectionContributor) has (username: connectionContributorName)
+          form a record of
+            user: connectionContributor
+            username: connectionContributorName
+        destination: to
+        notes: each DiscoveryLinking._connectionNotes (connection) has (author: connectionNoteAuthor, note: connectionNote, text: connectionNoteText)
+          where Registering._username (user: connectionNoteAuthor) has (username: connectionNoteAuthorName)
+          form a record of
+            author: connectionNoteAuthor
+            authorName: connectionNoteAuthorName
+            note: connectionNote
+            text: connectionNoteText
+        source: from
+    graph
+    name
+    sources: each DiscoveryLinking._sources (graph) has (source, url)
+      form a record of
+        contributors: each DiscoveryLinking._sourceContributors (source) has (contributor: sourceContributor)
+          where Registering._username (user: sourceContributor) has (username: sourceContributorName)
+          form a record of
+            user: sourceContributor
+            username: sourceContributorName
+        notes: each DiscoveryLinking._sourceNotes (source) has (author: sourceNoteAuthor, note: sourceNote, text: sourceNoteText)
+          where Registering._username (user: sourceNoteAuthor) has (username: sourceNoteAuthorName)
+          form a record of
+            author: sourceNoteAuthor
+            authorName: sourceNoteAuthorName
+            note: sourceNote
+            text: sourceNoteText
+        source
+        url
+```
+
 ## Reactions
 
 ### DeliverFaultToAsker
@@ -1288,6 +1336,7 @@ then
 
 Authored path: `projectGraphs.CreateProjectGraph`.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 15.
 
 ```reaction
 when Collaborating.createProject (name, project)
@@ -1299,6 +1348,7 @@ then
 
 Authored path: `projectGraphs.CreateProjectGraph`.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 15.
 
 ```reaction
 when DiscoveryLinking.createGraph (name, graph), asked by projectGraphs.CreateProjectGraph
@@ -1306,6 +1356,81 @@ where
   earlier, Collaborating.createProject (name, project)
 then
   Collaborating.setItem (item: graph, project)
+```
+
+### projectGraphs.GetProjectGraph
+
+Authored path: `projectGraphs.GetProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 11.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 18.
+
+```reaction
+when RequestBoundary.request (path: "/projects/graph", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectGraphs.GetProjectGraph:member#2
+
+Authored path: `projectGraphs.GetProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 11.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGraphs.GetProjectGraph
+where
+  earlier, RequestBoundary.request (path: "/projects/graph", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: graph)
+then
+  RequestBoundary.respond (graph: former "the research graph (graph)" with (graph), requestId)
+```
+
+### projectGraphs.GetProjectGraph:noGraph#2
+
+Authored path: `projectGraphs.GetProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 11.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGraphs.GetProjectGraph
+where
+  earlier, RequestBoundary.request (path: "/projects/graph", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  no Collaborating._getItem (project)
+then
+  RequestBoundary.respond (error: "PROJECT_GRAPH_NOT_FOUND", requestId)
+```
+
+### projectGraphs.GetProjectGraph:notMember#2
+
+Authored path: `projectGraphs.GetProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 11.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGraphs.GetProjectGraph
+where
+  earlier, RequestBoundary.request (path: "/projects/graph", project, requestId, session)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGraphs.GetProjectGraph:unknownProject#2
+
+Authored path: `projectGraphs.GetProjectGraph`.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 11.
+- Covered by [Project graphs](../design/compositions/project-graphs.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGraphs.GetProjectGraph
+where
+  earlier, RequestBoundary.request (path: "/projects/graph", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
 ```
 
 ### reusable.accounts.identifying.Me
@@ -1504,3 +1629,4 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-note-removal` — requires `note`, `project`, `session`
 - `/projects/contributions/submit-source-note` — requires `project`, `session`, `source`, `text`
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
+- `/projects/graph` — requires `project`, `session`

@@ -163,6 +163,48 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
+  "/projects/graph": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "graph": {
+        "connections": {
+          "connection": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["connection"]>>;
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "destination": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["destination"]>>;
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["source"]>>;
+        }[];
+        "graph": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>>>, ["item"]>]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>>>, ["name"]>>;
+        "sources": {
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["source"]>>;
+          "url": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["url"]>>;
+        }[];
+      };
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
+  };
 };
 
 export type HttpAppWideError = never;
@@ -205,7 +247,7 @@ export type GrabbitHoleWireHttp = {
       "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["accept"]>[0], ["proposal"]>]>>;
     };
     output: Record<string, never>;
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/reject": {
     input: {
@@ -213,7 +255,7 @@ export type GrabbitHoleWireHttp = {
       "reason": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["reason"]>>;
     };
     output: Record<string, never>;
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit": {
     input: {
@@ -223,7 +265,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection": {
     input: {
@@ -234,7 +276,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection-note": {
     input: {
@@ -245,7 +287,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection-removal": {
     input: {
@@ -255,7 +297,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-note-edit": {
     input: {
@@ -266,7 +308,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-note-removal": {
     input: {
@@ -276,7 +318,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-source-note": {
     input: {
@@ -287,7 +329,7 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-source-removal": {
     input: {
@@ -297,6 +339,47 @@ export type GrabbitHoleWireHttp = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/projects/graph": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+    };
+    output: {
+      "graph": {
+        "connections": {
+          "connection": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["connection"]>>;
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "destination": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["destination"]>>;
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["source"]>>;
+        }[];
+        "graph": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>>>, ["item"]>]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>>>, ["name"]>>;
+        "sources": {
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["source"]>>;
+          "url": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["url"]>>;
+        }[];
+      };
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
 };
