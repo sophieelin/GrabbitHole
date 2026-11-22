@@ -20,8 +20,11 @@ While a session is active, the extension [records each visit](reaction:sessionin
 
 When the researcher is done, the extension [stops the session](reaction:sessioning.browsing.StopSession) with `Sessioning.stopSession`, and it records no more visits. The same owner check applies: anyone else gets `FORBIDDEN`, and an unknown session gets `SESSION_NOT_FOUND`. Stopping a session that has already stopped is refused by Sessioning with `SESSION_NOT_ACTIVE`.
 
+To review a session, its owner [reads the session's graph](reaction:sessioning.browsing.GetSessionGraph), found with `Sessioning._getItem`. It responds with the same [research graph](former:the research graph (graph)) as a project's main graph, so the frontend draws both the same way. The request names a session, never a graph, so a caller can read only a graph that Sessioning associates with a session of their own. Anyone else gets `FORBIDDEN`, and an unknown session gets `SESSION_NOT_FOUND`. A session with no associated graph gets `SESSION_GRAPH_NOT_FOUND`; this happens only if [creating the session's graph](reaction:sessioning.recording.CreateSessionGraph) failed.
+
 ```endpoints
 sessioning.browsing.StartSession at /sessions/start
 sessioning.browsing.RecordVisit at /sessions/visit
 sessioning.browsing.StopSession at /sessions/stop
+sessioning.browsing.GetSessionGraph at /sessions/graph
 ```

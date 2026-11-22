@@ -1,6 +1,7 @@
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
 import { no, reaction, when, where } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { ResearchGraph } from "./project-graphs.ts";
 import { textInput } from "./reusable/inputs.ts";
 
 const { Sessioning, DiscoveryLinking, SignIn } = concepts;
@@ -138,7 +139,45 @@ const StopSession = endpoint(
   { validators: { input: textInput } },
 );
 
+/**
+ * The session's owner reads the session's graph, in the same shape as a project's main graph. The
+ * caller names the session, never a graph, so only the owner's own session graph can be read here.
+ */
+const GetSessionGraph = endpoint(
+  "/sessions/graph",
+  ({ session, user, browsingSession, graph }) =>
+    receive({ session, browsingSession })
+      .then(SignIn.use({ session }).responds({ subject: user }))
+      .then(
+        where(
+          Sessioning._session({ session: browsingSession }).is({ user }),
+          Sessioning._getItem({ session: browsingSession }).is({ item: graph }),
+        )
+          .then(respond({ graph: ResearchGraph({ graph }) }))
+          .named("owner"),
+
+        where(
+          Sessioning._session({ session: browsingSession }).is({ user }),
+          no(Sessioning._getItem({ session: browsingSession })),
+        )
+          .then(respond({ error: "SESSION_GRAPH_NOT_FOUND" }))
+          .named("noGraph"),
+
+        where(
+          Sessioning._session({ session: browsingSession }).is({}),
+          no(Sessioning._session({ session: browsingSession }).is({ user })),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("notOwner"),
+
+        where(no(Sessioning._session({ session: browsingSession })))
+          .then(respond({ error: "SESSION_NOT_FOUND" }))
+          .named("unknownSession"),
+      ),
+  { validators: { input: textInput } },
+);
+
 export const composition = {
   recording: { CreateSessionGraph, RecordSessionSource, RecordSessionOrigin, RecordSessionConnection },
-  browsing: { StartSession, RecordVisit, StopSession },
+  browsing: { StartSession, RecordVisit, StopSession, GetSessionGraph },
 };

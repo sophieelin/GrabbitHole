@@ -176,3 +176,66 @@ describe("Stopping a browsing session", () => {
     });
   });
 });
+
+describe("Reading a session's graph", () => {
+  test("the owner sees the session's sources and connections, with contributors", async () => {
+    const { application, api, researcher, start } = await setup();
+    const browsingSession = await start();
+    const visit = async (url: string, sourceUrl: string) =>
+      ok(await api["/sessions/visit"]({ session: researcher.session, browsingSession, url, sourceUrl }));
+    await visit(ARTICLE, ARTICLE);
+    await visit(MUSEUM, ARTICLE);
+    await application.whenIdle();
+
+    const { graph } = ok(await api["/sessions/graph"]({ session: researcher.session, browsingSession }));
+    const contributors = [{ user: researcher.user, username: "researcher" }];
+    const article = graph.sources.find(({ url }) => url === ARTICLE)!;
+    const museum = graph.sources.find(({ url }) => url === MUSEUM)!;
+
+    expect(graph.name).toBe("Research Session");
+    // Sources come ordered by URL.
+    expect(graph.sources).toEqual([
+      { source: museum.source, url: MUSEUM, contributors, notes: [] },
+      { source: article.source, url: ARTICLE, contributors, notes: [] },
+    ]);
+    expect(graph.connections).toEqual([
+      {
+        connection: graph.connections[0]!.connection,
+        source: article.source,
+        destination: museum.source,
+        contributors,
+        notes: [],
+      },
+    ]);
+  });
+
+  test("a new session's graph is empty", async () => {
+    const { application, api, researcher, start } = await setup();
+    const browsingSession = await start();
+    const [row] = await application.concepts.Sessioning._getItem({ session: browsingSession });
+
+    expect(await api["/sessions/graph"]({ session: researcher.session, browsingSession })).toEqual({
+      graph: { graph: row!.item, name: "Research Session", sources: [], connections: [] },
+    });
+  });
+
+  test("someone else cannot read it, and an unknown session is not found", async () => {
+    const { api, researcher, other, start } = await setup();
+    const browsingSession = await start();
+
+    expect(await api["/sessions/graph"]({ session: other.session, browsingSession })).toEqual({ error: "FORBIDDEN" });
+    expect(
+      await api["/sessions/graph"]({ session: researcher.session, browsingSession: "no-such-session" as Session }),
+    ).toEqual({ error: "SESSION_NOT_FOUND" });
+  });
+
+  test("a caller who is not signed in cannot read it", async () => {
+    const { api, researcher, start } = await setup();
+    const browsingSession = await start();
+    ok(await api.auth.logout({ session: researcher.session }));
+
+    expect(await api["/sessions/graph"]({ session: researcher.session, browsingSession })).toEqual({
+      error: "NOT_SIGNED_IN",
+    });
+  });
+});
