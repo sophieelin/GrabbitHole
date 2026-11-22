@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
+  ItemAlreadyAssociated,
+  ItemAlreadySet,
   type Session,
   SessionNotActive,
   SessionNotFound,
   SessioningConcept,
 } from "../../src/concepts/Sessioning/Sessioning.ts";
+import type { Graph } from "../../src/concepts/DiscoveryLinking/DiscoveryLinking.ts";
 import type { User } from "../../src/concepts/Registering/Registering.ts";
 import { testDatabase } from "../support/reusable/mongo.ts";
+import { expectOneWinner } from "../support/reusable/race.ts";
 
 const dylan = "dylan" as User;
 
@@ -17,7 +21,7 @@ const MUSEUM_TOUR = "https://museum.example/tour";
 const TIKTOK = "https://tiktok.example/video";
 
 async function setup() {
-  return { sessioning: new SessioningConcept<User>(await testDatabase()) };
+  return { sessioning: new SessioningConcept<User, Graph>(await testDatabase()) };
 }
 
 describe("Sessioning", () => {
@@ -119,5 +123,44 @@ describe("Sessioning", () => {
     ]);
     expect(await sessioning._connections({ session })).toEqual([{ source: ARTICLE, destination: MUSEUM }]);
     expect(await sessioning._visited({ session })).toEqual([{ url: MUSEUM }, { url: ARTICLE }]);
+  });
+
+  test("setItem associates one item with a session, and each item with one session", async () => {
+    const { sessioning } = await setup();
+    const graph = "graph-1" as Graph;
+    const { session } = await sessioning.startSession({ user: dylan });
+    expect(await sessioning._getItem({ session })).toEqual([]);
+    expect(await sessioning._getSessionByItem({ item: graph })).toEqual([]);
+
+    await sessioning.setItem({ session, item: graph });
+    expect(await sessioning._getItem({ session })).toEqual([{ item: graph }]);
+    expect(await sessioning._getSessionByItem({ item: graph })).toEqual([{ session }]);
+
+    const again = sessioning.setItem({ session, item: "graph-2" as Graph });
+    await expect(again).rejects.toThrow(ItemAlreadySet);
+    await expect(again).rejects.toThrow("This session already has an associated item.");
+    expect(await sessioning._getItem({ session })).toEqual([{ item: graph }]);
+
+    const { session: other } = await sessioning.startSession({ user: dylan });
+    const taken = sessioning.setItem({ session: other, item: graph });
+    await expect(taken).rejects.toThrow(ItemAlreadyAssociated);
+    await expect(taken).rejects.toThrow("This item is already associated with another session.");
+    expect(await sessioning._getItem({ session: other })).toEqual([]);
+
+    await expect(sessioning.setItem({ session: "missing" as Session, item: "graph-3" as Graph })).rejects.toThrow(
+      SessionNotFound,
+    );
+  });
+
+  test("of two setItems on one session at once, one wins and the other is refused with ITEM_ALREADY_SET", async () => {
+    const { sessioning } = await setup();
+    const { session } = await sessioning.startSession({ user: dylan });
+    await expectOneWinner(
+      [
+        sessioning.setItem({ session, item: "graph-1" as Graph }),
+        sessioning.setItem({ session, item: "graph-2" as Graph }),
+      ],
+      ItemAlreadySet,
+    );
   });
 });

@@ -1,7 +1,9 @@
-import { type Collection, type Db, MongoServerError, ObjectId, type UpdateFilter } from "mongodb";
+import { type Collection, type Db, type Filter, MongoServerError, ObjectId, type UpdateFilter } from "mongodb";
 
 export class SessionNotFound extends Error {}
 export class SessionNotActive extends Error {}
+export class ItemAlreadySet extends Error {}
+export class ItemAlreadyAssociated extends Error {}
 
 export type Session = string & { readonly __brand: "Session" };
 export type Status = "ACTIVE" | "STOPPED";
@@ -14,14 +16,16 @@ const STOPPED = "This session has stopped.";
  * recorded; `$addToSet` appends only URLs that are not already there. Each connection is its own
  * document, and a unique index on session, source, and destination enforces the rule that no two
  * connections share all three. A connection's ObjectId `_id` is used only to sort by when it was
- * recorded.
+ * recorded. A unique index on `item`, applied only to sessions that have one, enforces the rule
+ * that each item belongs to at most one session.
  */
 
-interface SessionDocument<User> {
+interface SessionDocument<User, Item> {
   _id: Session;
   user: User;
   status: Status;
   visited: string[];
+  item?: Item;
 }
 
 interface ConnectionDocument {
@@ -32,8 +36,8 @@ interface ConnectionDocument {
 }
 
 /** Preserves the paths between visited sources so users can understand how they discovered information during a browsing session. */
-export class SessioningConcept<User extends string> {
-  private readonly sessions: Collection<SessionDocument<User>>;
+export class SessioningConcept<User extends string, Item extends string> {
+  private readonly sessions: Collection<SessionDocument<User, Item>>;
   private readonly connections: Collection<ConnectionDocument>;
   private indexes: Promise<unknown> | undefined;
 
@@ -43,11 +47,12 @@ export class SessioningConcept<User extends string> {
     this.connections = database.collection(`${prefix}.connections`);
   }
 
-  /** Creates the unique connection index once. If creating it fails, the next action tries again. */
+  /** Creates the unique indexes once. If creating them fails, the next action tries again. */
   #ready() {
-    this.indexes ??= this.connections
-      .createIndex({ session: 1, source: 1, destination: 1 }, { unique: true })
-      .catch((error: unknown) => {
+    this.indexes ??= Promise.all([
+      this.connections.createIndex({ session: 1, source: 1, destination: 1 }, { unique: true }),
+      this.sessions.createIndex({ item: 1 }, { unique: true, partialFilterExpression: { item: { $exists: true } } }),
+    ]).catch((error: unknown) => {
         this.indexes = undefined;
         throw error;
       });
@@ -60,13 +65,36 @@ export class SessioningConcept<User extends string> {
     return { session };
   }
 
+  async setItem({ session, item }: { session: Session; item: Item }) {
+    await this.#ready();
+    let updated;
+    try {
+      // Only a session without an item is updated, so a second setItem cannot replace the first.
+      updated = await this.sessions.updateOne(
+        { _id: session, item: { $exists: false } },
+        { $set: { item } } as UpdateFilter<SessionDocument<User, Item>>,
+      );
+    } catch (error) {
+      if (isDuplicate(error)) {
+        throw new ItemAlreadyAssociated("This item is already associated with another session.");
+      }
+      throw error;
+    }
+    if (updated.matchedCount === 0) {
+      const found = await this.sessions.findOne({ _id: session });
+      if (found === null) throw new SessionNotFound(NO_SESSION);
+      throw new ItemAlreadySet("This session already has an associated item.");
+    }
+    return {};
+  }
+
   async recordVisit({ session, url, sourceUrl }: { session: Session; url: string; sourceUrl?: string }) {
     const linked = sourceUrl !== undefined && sourceUrl !== url;
     const urls = linked ? [url, sourceUrl] : [url];
     // Only an active session is updated, so a visit cannot slip in after the session stops.
     const updated = await this.sessions.findOneAndUpdate(
       { _id: session, status: "ACTIVE" },
-      { $addToSet: { visited: { $each: urls } } } as UpdateFilter<SessionDocument<User>>,
+      { $addToSet: { visited: { $each: urls } } } as UpdateFilter<SessionDocument<User, Item>>,
     );
     if (updated === null) await this.#refuse(session);
     if (linked) {
@@ -104,6 +132,16 @@ export class SessioningConcept<User extends string> {
   async _session({ session }: { session: Session }) {
     const found = await this.sessions.findOne({ _id: session });
     return found === null ? [] : [{ user: found.user, status: found.status }];
+  }
+
+  async _getItem({ session }: { session: Session }) {
+    const found = await this.sessions.findOne({ _id: session });
+    return found?.item === undefined ? [] : [{ item: found.item }];
+  }
+
+  async _getSessionByItem({ item }: { item: Item }) {
+    const found = await this.sessions.findOne({ item } as Filter<SessionDocument<User, Item>>);
+    return found === null ? [] : [{ session: found._id }];
   }
 
   async _visited({ session }: { session: Session }) {

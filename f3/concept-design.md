@@ -159,6 +159,7 @@ mergeGraph(target: Graph, other: Graph)
 
 ```text
 external User
+external Item
 
 Status is ACTIVE or STOPPED
 ```
@@ -177,7 +178,8 @@ A user starts a browsing session while researching a topic. They open several ar
 a set of Sessions with
   a user User
   a status Status
-  a visited set of Strings
+  a visited set of String
+  an optional item Item
 
 a set of Connections with
   a session Session
@@ -185,6 +187,7 @@ a set of Connections with
   a destination String
 
 Rule: No two Connections have the same session, source, and destination.
+Rule: Each Item is associated with at most one Session.
 ```
 
 **Actions**
@@ -196,7 +199,16 @@ startSession(user: User): returns (session: Session)
       user set to given user
       status set to ACTIVE
       an empty set of visited URLs
+      no associated item
     return session
+
+setItem(session: Session, item: Item)
+  where
+    session exists
+    session has no associated item
+    item is not associated with another Session
+  then
+    set session's item to given item
 
 recordVisit(session: Session, url: String, sourceUrl?: String)
   where
@@ -221,12 +233,32 @@ stopSession(session: Session)
     set session's status to STOPPED
 ```
 
+**Queries**
+
+```text
+_session(session: Session): optional (user: User, status: Status)
+  returns the session's user and status, if the session exists
+
+_getItem(session: Session): optional (item: Item)
+  returns the Item associated with the session, if one exists
+
+_getSessionByItem(item: Item): optional (session: Session)
+  returns the Session associated with the item, if one exists
+
+_visited(session: Session): many (url: String)
+  returns each URL visited in the session once, in the order it was first recorded
+
+_connections(session: Session): many (source: String, destination: String)
+  returns every connection recorded in the session, in the order each was first recorded
+```
+
 **Notes**
 
 - The browser extension identifies visited URLs and their originating pages when possible, including links opened in new tabs.
 - Returning to a previously visited page or switching tabs does not create a new connection unless the user follows a link.
 - If the originating page cannot be determined, the URL is recorded without a connection.
-- When a session starts, application reactions create a preliminary research graph. As the user browses, recorded URLs and connections are added to this graph. When the session ends, the graph is available for review and editing before being merged into the main project graph.
+- When a session starts, application reactions create a preliminary research graph and associate it with the session using `setItem`. As the user browses, recorded URLs and connections are added to this graph. When the session ends, the graph is available for review and editing before being merged into the main project graph.
+- In Grabbithole, `Sessioning.Item` is instantiated as `DiscoveryLinking.Graph`.
 
 ## Grouping
 
@@ -569,7 +601,16 @@ then
   DiscoveryLinking.createGraph("Research Session"): (graph)
 ```
 
-**Note:** The application associates the preliminary graph with the session.
+Associate the newly created graph with its session.
+
+```text
+reaction associateSessionGraph
+when
+  Sessioning.startSession(user): (session)
+  DiscoveryLinking.createGraph("Research Session"): (graph)
+then
+  Sessioning.setItem(session, graph)
+```
 
 ### 3. Recording Sources and Connections
 
@@ -597,7 +638,7 @@ then
   )
 ```
 
-**Note:** `graph` is the preliminary graph associated with the session, and `user` is the session's researcher. `source` and `destination` are the corresponding `DiscoveryLinking` Sources. Browser navigation that does not represent following a link does not create a connection, and previously recorded sources or connections are not duplicated.
+**Note:** `graph` is the preliminary graph associated with the session (`Sessioning._getItem`), and `user` is the session's researcher. `source` and `destination` are the corresponding `DiscoveryLinking` Sources. Browser navigation that does not represent following a link does not create a connection, and previously recorded sources or connections are not duplicated.
 
 ### 4. Accepting a Contribution
 

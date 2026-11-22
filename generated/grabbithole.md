@@ -83,9 +83,9 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 
 #### Instances
 
-- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 26.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 28.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 27.
+- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 27.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 29.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 28.
 
 ### Contributing
 
@@ -112,10 +112,10 @@ Defined in [Contributing](../design/concepts/Contributing.md), line 2.
 
 #### Instances
 
-- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 30.
-  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 33.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 32.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 31.
+- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 31.
+  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 34.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 33.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 32.
 
 ### DiscoveryLinking
 
@@ -165,8 +165,8 @@ Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.
 
 #### Instances
 
-- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 23.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 24.
+- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 24.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 25.
 
 ### Registering
 
@@ -194,6 +194,10 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 #### Actions
 
 - `startSession(user: User) : returns (session: Session)`
+- `setItem(session: Session, item: Item) : returns ()`
+  - Refuses `SESSION_NOT_FOUND`: There is no such session.
+  - Refuses `ITEM_ALREADY_SET`: This session already has an associated item.
+  - Refuses `ITEM_ALREADY_ASSOCIATED`: This item is already associated with another session.
 - `recordVisit(session: Session, url: String, sourceUrl?: String) : returns ()`
   - Refuses `SESSION_NOT_FOUND`: There is no such session.
   - Refuses `SESSION_NOT_ACTIVE`: This session has stopped.
@@ -204,12 +208,15 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 #### Queries
 
 - `_session(session: Session) : optional (user: User, status: Status)`
+- `_getItem(session: Session) : optional (item: Item)`
+- `_getSessionByItem(item: Item) : optional (session: Session)`
 - `_visited(session: Session) : many (url: String)`
 - `_connections(session: Session) : many (source: String, destination: String)`
 
 #### Instances
 
 - `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 20.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 22.
   - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 21.
 
 ### SignIn
