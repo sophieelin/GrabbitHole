@@ -20,7 +20,7 @@ const CreateProjectGraph = reaction(({ project, name, graph }) =>
  * connections between those sources, and the notes and contributors on each. People are given by
  * user and username. Each nested list has its own variable names so that no two lists are joined.
  */
-const ResearchGraph = former(
+export const ResearchGraph = former(
   "the research graph (graph)",
   (
     { graph },

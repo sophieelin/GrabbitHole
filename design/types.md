@@ -19,6 +19,7 @@ instantiate SignIn with
 
 instantiate Sessioning with
   User is Registering.User
+  Item is DiscoveryLinking.Graph
 
 instantiate DiscoveryLinking with
   User is Registering.User

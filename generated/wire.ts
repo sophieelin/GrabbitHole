@@ -73,14 +73,14 @@ export type GrabbitHoleWire = {
   };
   "/projects/contributions/submit": {
     input: {
-      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "other": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getSessionByItem"]>[0], ["item"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_A_SESSION_GRAPH" | "NOT_SIGNED_IN" | "SESSION_STILL_RECORDING" };
   };
   "/projects/contributions/submit-connection": {
     input: {
@@ -205,6 +205,75 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
   };
+  "/sessions/graph": {
+    input: {
+      "browsingSession": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "graph": {
+        "connections": {
+          "connection": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["connection"]>>;
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "destination": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["destination"]>>;
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["source"]>>;
+        }[];
+        "graph": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>>>, ["item"]>]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>>>, ["name"]>>;
+        "sources": {
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["source"]>>;
+          "url": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["url"]>>;
+        }[];
+      };
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SESSION_GRAPH_NOT_FOUND" | "SESSION_NOT_FOUND" };
+  };
+  "/sessions/start": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "browsingSession": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["startSession"]>>, ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>[0], ["session"]>]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "ITEM_ALREADY_ASSOCIATED" | "ITEM_ALREADY_SET" | "NOT_SIGNED_IN" | "SESSION_GRAPH_NOT_FOUND" | "SESSION_NOT_FOUND" };
+  };
+  "/sessions/stop": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["stopSession"]>[0], ["session"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SESSION_NOT_ACTIVE" | "SESSION_NOT_FOUND" };
+  };
+  "/sessions/visit": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["session"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "sourceUrl": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["sourceUrl"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["url"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "CONNECTION_EXISTS" | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SESSION_NOT_ACTIVE" | "SESSION_NOT_FOUND" | "SOURCE_EXISTS" | "SOURCE_NOT_IN_GRAPH" };
+  };
 };
 
 export type HttpAppWideError = never;
@@ -259,13 +328,13 @@ export type GrabbitHoleWireHttp = {
   };
   "/projects/contributions/submit": {
     input: {
-      "other": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeMergeGraphChange"]["fn"]>[0], ["other"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>]>>;
+      "other": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getSessionByItem"]>[0], ["item"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection": {
     input: {
@@ -381,5 +450,69 @@ export type GrabbitHoleWireHttp = {
       };
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/graph": {
+    input: {
+      "browsingSession": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>>;
+    };
+    output: {
+      "graph": {
+        "connections": {
+          "connection": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["connection"]>>;
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "destination": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["destination"]>>;
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connectionNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connections"]>>>, ["source"]>>;
+        }[];
+        "graph": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>[0], ["graph"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>>>, ["item"]>]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_graph"]>>>, ["name"]>>;
+        "sources": {
+          "contributors": {
+            "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceContributors"]>>>, ["contributor"]>]>>;
+            "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+          }[];
+          "notes": {
+            "author": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["author"]>]>>;
+            "authorName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
+            "note": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["note"]>>;
+            "text": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sourceNotes"]>>>, ["text"]>>;
+          }[];
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["source"]>>;
+          "url": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_sources"]>>>, ["url"]>>;
+        }[];
+      };
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/start": {
+    input: Record<string, never>;
+    output: {
+      "browsingSession": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["startSession"]>>, ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_getItem"]>[0], ["session"]>]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/stop": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["stopSession"]>[0], ["session"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/sessions/visit": {
+    input: {
+      "browsingSession": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["session"]>]>>;
+      "sourceUrl": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["sourceUrl"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["recordVisit"]>[0], ["url"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
 };
