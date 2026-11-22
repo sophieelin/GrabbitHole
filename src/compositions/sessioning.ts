@@ -1,7 +1,9 @@
-import { no, reaction, when } from "@mit-sdg/sync-engine/language";
+import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
+import { no, reaction, when, where } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { textInput } from "./reusable/inputs.ts";
 
-const { Sessioning, DiscoveryLinking } = concepts;
+const { Sessioning, DiscoveryLinking, SignIn } = concepts;
 
 /** createSessionGraph and associateSessionGraph: each new session gets its own empty preliminary graph. */
 const CreateSessionGraph = reaction(({ session, graph }) =>
@@ -55,6 +57,31 @@ const RecordSessionConnection = reaction(({ session, url, sourceUrl, graph, user
     .then(DiscoveryLinking.addConnection({ graph, source, destination, contributor: user })),
 );
 
+/**
+ * The signed-in user starts a browsing session. It answers only once the session's graph is
+ * associated, so a visit the extension records right after cannot arrive before the graph exists.
+ * The browsing session is named `browsingSession` because `session` is the sign-in cookie.
+ */
+const StartSession = endpoint(
+  "/sessions/start",
+  ({ session, user, browsingSession }) =>
+    receive({ session })
+      .then(SignIn.use({ session }).responds({ subject: user }))
+      .then(Sessioning.startSession({ user }).responds({ session: browsingSession }))
+      .afterFlowSettles()
+      .then(
+        where(Sessioning._getItem({ session: browsingSession }).is({}))
+          .then(respond({ browsingSession }))
+          .named("ready"),
+
+        where(no(Sessioning._getItem({ session: browsingSession })))
+          .then(respond({ error: "SESSION_GRAPH_NOT_FOUND" }))
+          .named("noGraph"),
+      ),
+  { validators: { input: textInput } },
+);
+
 export const composition = {
   recording: { CreateSessionGraph, RecordSessionSource, RecordSessionOrigin, RecordSessionConnection },
+  browsing: { StartSession },
 };

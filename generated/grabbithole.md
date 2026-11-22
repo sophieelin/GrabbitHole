@@ -1615,10 +1615,71 @@ then
   RequestBoundary.respond (error: "INVALID_CREDENTIALS", requestId)
 ```
 
+### sessioning.browsing.StartSession
+
+Authored path: `sessioning.browsing.StartSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 20.
+
+```reaction
+when RequestBoundary.request (path: "/sessions/start", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### sessioning.browsing.StartSession#2
+
+Authored path: `sessioning.browsing.StartSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 20.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessioning.browsing.StartSession
+then
+  Sessioning.startSession (user)
+```
+
+### sessioning.browsing.StartSession:noGraph#3
+
+Authored path: `sessioning.browsing.StartSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 20.
+
+```reaction
+when Sessioning.startSession (user, session: browsingSession), asked by sessioning.browsing.StartSession#2
+at the flow's settlement frontier
+where
+  no Sessioning._getItem (session: browsingSession)
+  earlier, RequestBoundary.request (path: "/sessions/start", requestId, session)
+then
+  RequestBoundary.respond (error: "SESSION_GRAPH_NOT_FOUND", requestId)
+```
+
+### sessioning.browsing.StartSession:ready#3
+
+Authored path: `sessioning.browsing.StartSession`.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 11.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 20.
+
+```reaction
+when Sessioning.startSession (user, session: browsingSession), asked by sessioning.browsing.StartSession#2
+at the flow's settlement frontier
+where
+  Sessioning._getItem (session: browsingSession)
+  earlier, RequestBoundary.request (path: "/sessions/start", requestId, session)
+then
+  RequestBoundary.respond (browsingSession, requestId)
+```
+
 ### sessioning.recording.CreateSessionGraph
 
 Authored path: `sessioning.recording.CreateSessionGraph`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 5.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
 
 ```reaction
 when Sessioning.startSession (session)
@@ -1630,6 +1691,7 @@ then
 
 Authored path: `sessioning.recording.CreateSessionGraph`.
 - Covered by [Sessioning](../design/compositions/sessioning.md), line 5.
+- Covered by [Sessioning](../design/compositions/sessioning.md), line 17.
 
 ```reaction
 when DiscoveryLinking.createGraph (name: "Research Session", graph), asked by sessioning.recording.CreateSessionGraph
@@ -1711,3 +1773,4 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-source-note` — requires `project`, `session`, `source`, `text`
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
 - `/projects/graph` — requires `project`, `session`
+- `/sessions/start` — requires `session`
