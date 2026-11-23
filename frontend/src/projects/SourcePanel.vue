@@ -7,13 +7,22 @@ import type { GroupId, GroupStyle, Note, ResearchGraph, Source, SourceId } from 
  * Everything recorded about one source: its URL, the notes on it, who contributed it, and the
  * pages it was reached from and led to. Changes are proposals, sent up for the page to submit.
  */
-const props = defineProps<{ graph: ResearchGraph; source: Source; busy: boolean; groups: GroupStyle[]; group: GroupStyle | null }>();
+const props = defineProps<{
+  graph: ResearchGraph;
+  source: Source;
+  busy: boolean;
+  groups: GroupStyle[];
+  group: GroupStyle | null;
+  /** The view the graph is in, so the panel can offer the other one. */
+  mode: "group" | "path";
+}>();
 const emit = defineEmits<{
   select: [source: SourceId];
   close: [];
   proposeNote: [text: string];
   proposeNoteRemoval: [note: Note];
   proposeRemoval: [];
+  switchView: [];
   setGroup: [group: GroupId | null];
   newGroup: [name: string];
 }>();
@@ -70,6 +79,9 @@ function submitNote() {
     </header>
     <h2>{{ label.page || label.site }}</h2>
     <a class="url" :href="source.url" target="_blank" rel="noreferrer">{{ source.url }}</a>
+    <button type="button" class="button outline other" @click="emit('switchView')">
+      {{ mode === "group" ? "See how we got here" : "See it in its group" }}
+    </button>
 
     <section>
       <h3>Group</h3>
@@ -238,6 +250,11 @@ ul {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+.other {
+  align-self: flex-start;
+  min-height: 34px;
+  font-size: var(--text-sm);
 }
 .add {
   display: flex;
