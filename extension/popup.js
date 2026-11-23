@@ -21,6 +21,7 @@ document.getElementById("check").addEventListener("click", async () => {
 
 const startButton = document.getElementById("start");
 const stopButton = document.getElementById("stop");
+const restartButton = document.getElementById("restart");
 const sessionStatus = document.getElementById("session");
 
 const pageList = document.getElementById("pages");
@@ -62,6 +63,7 @@ async function showSession() {
   const { recording, lastSession } = await chrome.storage.local.get(["recording", "lastSession"]);
   startButton.hidden = Boolean(recording);
   stopButton.hidden = !recording;
+  restartButton.hidden = !recording;
   if (recording) {
     const pages = recording.visited.length;
     sessionStatus.textContent = `Recording. ${pages} ${pages === 1 ? "page" : "pages"} so far.`;
@@ -200,6 +202,16 @@ stopButton.addEventListener("click", async () => {
   const { status: code, body } = await ask({ type: "stop" });
   // 404 and 409: the server no longer has the session, or it had already stopped. Either way it is over.
   sessionStatus.textContent = [200, 404, 409].includes(code) ? "Session stopped." : failure(code, body);
+  await showSession();
+});
+
+// Stops the current session and starts a fresh one. Only the session just stopped is kept, so the
+// one before it can no longer be added to a project from here.
+restartButton.addEventListener("click", async () => {
+  sessionStatus.textContent = "Starting a new session…";
+  await ask({ type: "stop" });
+  const { status: code, body } = await ask({ type: "start" });
+  if (code !== 200) sessionStatus.textContent = failure(code, body);
   await showSession();
 });
 
