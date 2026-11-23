@@ -7,13 +7,17 @@
  *   address are refused. Unset, it is http://localhost:<PORT>.
  * - MONGODB_URI: the database. Unset on your own machine, records are kept in an in-memory
  *   MongoDB and lost when the server stops. Anywhere else, the server refuses to start without it.
+ * - ANTHROPIC_API_KEY (and optionally ANTHROPIC_MODEL): lets members ask Claude to suggest topic
+ *   groups. Unset, everything else works and the website hides that button.
  */
 import { createHttpHandler } from "@mit-sdg/sync-engine-http/handler";
 import { createGateway } from "@mit-sdg/sync-engine/boundary";
 import { type Db, MongoClient } from "mongodb";
 import type { GrabbitHoleWire } from "../../generated/wire.ts";
 import { assembleGrabbitHole } from "../application.ts";
+import { claudeReasoner } from "../agents/claude.ts";
 import { grabbitHolePolicy } from "./http.ts";
+import { CAPABILITIES_PATH, handleCapabilities, handleSuggest, SUGGEST_PATH } from "./suggest.ts";
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOST ?? "0.0.0.0";
@@ -25,6 +29,9 @@ const application = assembleGrabbitHole({ database });
 const gateway = createGateway<GrabbitHoleWire>({ application });
 const handleApi = createHttpHandler({ application, gateway, policy: grabbitHolePolicy(publicOrigin) });
 
+const { ANTHROPIC_API_KEY, ANTHROPIC_MODEL } = process.env;
+const reasoner = ANTHROPIC_API_KEY ? claudeReasoner({ apiKey: ANTHROPIC_API_KEY, model: ANTHROPIC_MODEL || "claude-haiku-5-5" }) : undefined;
+
 const NO_REFERRER = { "Referrer-Policy": "no-referrer" };
 
 const server = Bun.serve({
@@ -32,6 +39,8 @@ const server = Bun.serve({
   hostname,
   async fetch(request) {
     const { pathname } = new URL(request.url);
+    if (pathname === SUGGEST_PATH) return handleSuggest(request, handleApi, reasoner);
+    if (pathname === CAPABILITIES_PATH) return handleCapabilities(reasoner);
     if (pathname.startsWith("/api/")) return handleApi(request);
     if (pathname === "/health") return new Response("ok");
     if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
@@ -45,6 +54,7 @@ const server = Bun.serve({
   },
 });
 console.log(`GrabbitHole is listening on ${server.url} for ${publicOrigin}.`);
+console.log(reasoner ? "Group suggestions are on." : "ANTHROPIC_API_KEY is not set, so group suggestions are off.");
 
 /** True when the address people open is on this machine, which is the only place an in-memory database is allowed. */
 function isLocal(origin: string): boolean {

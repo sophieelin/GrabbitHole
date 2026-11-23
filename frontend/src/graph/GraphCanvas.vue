@@ -244,7 +244,7 @@ function fit() {
   const box = viewport.value?.getBoundingClientRect();
   if (!box || layout.value.width === 0) return;
   const { width, height } = layout.value;
-  const scale = Math.max(0.55, Math.min(1.2, (box.width - 64) / width, (box.height - 96) / height));
+  const scale = Math.max(0.55, Math.min(1.2, (box.width - 112) / width, (box.height - 96) / height));
   view.scale = scale;
   view.x = Math.max(56, (box.width - width * scale) / 2);
   view.y = Math.max(32, (box.height - 40 - height * scale) / 2);
