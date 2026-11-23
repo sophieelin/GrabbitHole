@@ -36,6 +36,13 @@ const { me } = useSession();
 const graph = ref<ResearchGraph | null>(null);
 const loadRefusal = ref("");
 const selectedId = ref<SourceId | null>(null);
+/** Which question the drawing answers: what we covered (by group) or how we got there (by path). */
+const mode = ref<"group" | "path">("group");
+/** Shows a source in the other view, selected, so it is easy to find there. */
+function switchView(source: SourceId | null = selectedId.value) {
+  selectedId.value = source;
+  mode.value = mode.value === "group" ? "path" : "group";
+}
 const busy = ref(false);
 const refusal = ref("");
 const notice = ref("");
@@ -215,7 +222,20 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           <p>Record a browsing session with the GrabbitHole extension, stop it, and add it to this project from the extension. The pages you visited and the links you followed will show up here.</p>
         </div>
         <div v-else class="drawing">
-          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" :groups="groupStyles" :group-of="groupOf" @select="selectedId = $event" />
+          <GraphCanvas
+            ref="canvas"
+            :graph="graph"
+            :selected="selectedId"
+            :groups="groupStyles"
+            :group-of="groupOf"
+            :mode="mode"
+            @select="selectedId = $event"
+            @switch="switchView"
+          />
+          <div class="views" role="group" aria-label="View">
+            <button type="button" :class="{ on: mode === 'group' }" :aria-pressed="mode === 'group'" @click="mode = 'group'">By group</button>
+            <button type="button" :class="{ on: mode === 'path' }" :aria-pressed="mode === 'path'" @click="mode = 'path'">By path</button>
+          </div>
           <div class="controls">
             <button type="button" aria-label="Zoom out" @click="canvas?.zoom(0.8)">−</button>
             <button type="button" aria-label="Zoom in" @click="canvas?.zoom(1.25)">+</button>
@@ -225,7 +245,10 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
             <span><i class="start"></i>Where a session started</span>
             <span><i class="line"></i>Led to</span>
             <span v-if="noted"><i class="dot"></i>Has a note</span>
-            <span v-if="groupStyles.length">{{ selected === null ? "Click a source to see its links to other groups" : "Click the background to show everything" }}</span>
+            <template v-if="mode === 'path'">
+              <span v-for="row in groupStyles" :key="row.group" class="topic" :style="{ color: row.color }"><i class="dot"></i>{{ row.name }}</span>
+            </template>
+            <span v-else-if="groupStyles.length && selected === null">Click a source to see its links to other groups</span>
           </p>
         </div>
         <SourcePanel
@@ -235,6 +258,8 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           :busy="busy"
           :groups="groupStyles"
           :group="groupOf.get(selected.source) ?? null"
+          :mode="mode"
+          @switch-view="switchView()"
           @set-group="setGroup"
           @new-group="newGroupForSelected"
           @select="selectedId = $event"
@@ -360,6 +385,30 @@ h1 {
   display: flex;
   background: #faf6ee;
 }
+.views {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+.views button {
+  height: 28px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.views button.on {
+  background: var(--color-text);
+  color: #fff;
+}
 .controls {
   position: absolute;
   right: var(--space-3);
@@ -391,10 +440,11 @@ h1 {
   position: absolute;
   bottom: var(--space-3);
   left: var(--space-4);
+  right: 132px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-5);
+  gap: 6px var(--space-5);
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
@@ -414,6 +464,12 @@ h1 {
 .hint .line {
   width: 24px;
   border-top: 2px solid #8f8a7f;
+}
+.hint .topic {
+  font-weight: 700;
+}
+.hint .topic .dot {
+  background: currentColor;
 }
 .hint .dot {
   width: 7px;

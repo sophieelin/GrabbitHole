@@ -5,11 +5,18 @@ import { shortName } from "./labels.ts";
 import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
 
 /**
- * Draws a research graph as clusters. Each source is a pill with its name. A group's sources sit
- * together under the group's name, in the group's color, and a line inside a group runs from the
- * page a researcher was on to the page they went to. Links between groups stay hidden until a
- * source is selected; then its links are drawn and everything else fades. A dark pill is a page
- * nobody arrived at from another page: where a session started.
+ * Draws a research graph in one of two views. Each source is a pill with its name, in its group's
+ * color, and a dark pill is a page nobody arrived at from another page: where a session started.
+ *
+ * The group view answers "what did we cover": a group's sources sit together under its name, with
+ * arrows for the links inside the group. Links between groups stay hidden until a source is
+ * selected; then its links are drawn and everything else fades.
+ *
+ * The path view answers "how did we get there": every source is laid out along the links, left to
+ * right from where a session started, and every link is drawn as an arrow from the page a
+ * researcher was on to the page they went to.
+ *
+ * Right-clicking a source asks to see it in the other view.
  */
 const props = defineProps<{
   graph: ResearchGraph;
@@ -18,8 +25,14 @@ const props = defineProps<{
   groups: GroupStyle[];
   /** The group each grouped source is in. */
   groupOf: Map<SourceId, GroupStyle>;
+  /**
+   * What decides where sources sit. "group" puts each group's sources together and draws links
+   * between groups only for the selected source. "path" lays every source out along the links, left
+   * to right from where a session started, and draws every link.
+   */
+  mode: "group" | "path";
 }>();
-const emit = defineEmits<{ select: [source: SourceId | null] }>();
+const emit = defineEmits<{ select: [source: SourceId | null]; switch: [source: SourceId] }>();
 
 const INK = "#1e2833";
 const GREY = "#8f8a7f";
@@ -62,7 +75,48 @@ const viewport = ref<HTMLElement | null>(null);
 /** The room the drawing had when it first appeared. The rows of clusters are chosen to fill it. */
 const room = ref({ width: 1100, height: 560 });
 
-const layout = computed(() => {
+const layout = computed(() => (props.mode === "path" ? pathLayout() : groupLayout()));
+
+/**
+ * The path view: one left-to-right drawing of every source and every link. Pages where a session
+ * started are in the first column, and each link leads one or more columns to the right. A pill
+ * keeps its group's color, so the groups can still be told apart.
+ */
+function pathLayout() {
+  const arrivedAt = new Set(props.graph.connections.map(({ destination }) => destination));
+  const pills = new Map<SourceId, Pill>();
+  for (const source of props.graph.sources) {
+    const name = shortName(source.url);
+    pills.set(source.source, { source, name, width: widthOf(name), x: 0, y: 0, color: props.groupOf.get(source.source)?.color ?? null, start: !arrivedAt.has(source.source) });
+  }
+  const followed = props.graph.connections.filter(({ source, destination }) => source !== destination && pills.has(source) && pills.has(destination));
+  const trail = new dagre.graphlib.Graph();
+  trail.setGraph({ rankdir: "LR", nodesep: 12, ranksep: 56, edgesep: 20, marginx: 0, marginy: 0 });
+  trail.setDefaultEdgeLabel(() => ({}));
+  for (const [id, pill] of pills) trail.setNode(id, { width: pill.width, height: PILL_HEIGHT });
+  for (const { source, destination } of followed) trail.setEdge(source, destination);
+  // An invisible first node linked to every starting point keeps all of them in the first column.
+  const BEFORE_START = "before every starting point";
+  trail.setNode(BEFORE_START, { width: 0, height: 0 });
+  for (const [id, pill] of pills) if (pill.start) trail.setEdge(BEFORE_START, id);
+  dagre.layout(trail);
+  const left = Math.min(...[...pills.entries()].map(([id, pill]) => trail.node(id).x - pill.width / 2), 0);
+  for (const [id, pill] of pills) Object.assign(pill, { x: trail.node(id).x - left, y: trail.node(id).y });
+
+  const links = followed.map((connection) => {
+    const from = pills.get(connection.source)!;
+    const to = pills.get(connection.destination)!;
+    const forward = to.x - to.width / 2 > from.x + from.width / 2 + 8;
+    // A link between two sources of the same group takes the group's color; any other is grey.
+    const shared = from.color !== null && from.color === to.color ? from.color : GREY;
+    return { connection, within: true, color: shared, path: forward ? sideways(from, to) : across(from, to) };
+  });
+  const cluster: Cluster = { key: "", name: "", color: GREY, count: pills.size, x: 0, y: 0, width: 0, height: 0, pills: [...pills.values()] };
+  return { clusters: [cluster], links, width: (trail.graph().width ?? 0) - left, height: trail.graph().height ?? 0, showLabels: false };
+}
+
+/** The group view: each group's sources together under its name. */
+function groupLayout() {
   const arrivedAt = new Set(props.graph.connections.map(({ destination }) => destination));
   const groupKey = (source: SourceId) => props.groupOf.get(source)?.group ?? "";
 
@@ -186,7 +240,7 @@ const layout = computed(() => {
     return [{ connection, within, color: within ? (from.color ?? GREY) : INK, path: within && forward ? sideways(from, to) : across(from, to) }];
   });
   return { clusters, links, width: best.width, height: best.height, showLabels: props.groups.length > 0 };
-});
+}
 
 /** A curve from the right end of one pill to the left end of the next, inside a cluster. */
 function sideways(from: Pill, to: Pill): string {
@@ -248,6 +302,21 @@ function fit() {
   view.scale = scale;
   view.x = Math.max(56, (box.width - width * scale) / 2);
   view.y = Math.max(32, (box.height - 40 - height * scale) / 2);
+  reveal();
+}
+
+/** If the selected source is outside the drawing's frame, moves the drawing to bring it to the middle. */
+function reveal() {
+  const box = viewport.value?.getBoundingClientRect();
+  const pill = layout.value.clusters.flatMap(({ pills }) => pills).find(({ source }) => source.source === props.selected);
+  if (!box || !pill) return;
+  const x = view.x + pill.x * view.scale;
+  const y = view.y + pill.y * view.scale;
+  const edge = pill.width / 2 + 24;
+  if (x < edge || x > box.width - edge || y < 40 || y > box.height - 70) {
+    view.x = box.width / 2 - pill.x * view.scale;
+    view.y = box.height / 2 - pill.y * view.scale;
+  }
 }
 
 function zoom(factor: number, at?: { x: number; y: number }) {
@@ -310,10 +379,11 @@ const observer = new ResizeObserver(() => {
 onMounted(() => viewport.value && observer.observe(viewport.value));
 onBeforeUnmount(() => observer.disconnect());
 watch(
-  () => [layout.value.width, layout.value.height],
+  () => [layout.value.width, layout.value.height, props.mode],
   () => fit(),
   { flush: "post" },
 );
+watch(() => props.selected, reveal, { flush: "post" });
 
 defineExpose({ fit, zoom });
 </script>
@@ -379,6 +449,7 @@ defineExpose({ fit, zoom });
           :aria-pressed="pill.source.source === selected"
           :title="pill.source.url"
           @click="emit('select', pill.source.source)"
+          @contextmenu.prevent="emit('switch', pill.source.source)"
         >
           <span v-if="pill.source.notes.length" class="noted" aria-label="Has a note"></span>{{ pill.name }}
         </button>
