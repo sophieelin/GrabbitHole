@@ -537,22 +537,51 @@ revokeReviewer(project: Project, owner: User, member: User)
 
 **Queries**
 
+
+**Queries**
+
 ```text
-_getMembers(project: Project): many (user: User)
-  returns all members of the project
+_project(project: Project): optional (name: String, owner: User)
+  returns the project's name and owner,
+  or no row for an unknown project
+
+_members(project: Project): many (user: User)
+  returns each member of the project,
+  or no rows for an unknown project
+
+_reviewers(project: Project): many (user: User)
+  returns each reviewer of the project,
+  or no rows for an unknown project
+
+_invitation(invitation: Invitation): optional (project: Project, invitee: User, status: InvitationStatus)
+  returns the invitation's project, invitee, and status,
+  or no row for an unknown invitation
+
+_projectsOf(user: User): many (project: Project, name: String)
+  returns each project the user belongs to, with its name,
+  ordered by name and then by project;
+  returns no rows if the user belongs to no projects
+
+_pendingInvitations(user: User): many (invitation: Invitation, project: Project)
+  returns all pending invitations for the given user
 
 _canReview(project: Project, user: User): one (allowed: Flag)
-  returns true if user belongs to project's reviewers
+  returns true if the project exists and user belongs to its reviewers,
+  otherwise false
 
 _canView(project: Project, user: User): one (allowed: Flag)
-  returns true if user belongs to project's members
+  returns true if the project exists and user belongs to its members,
+  otherwise false
 
 _getItem(project: Project): optional (item: Item)
-  returns the Item associated with the project, if one exists
+  returns the item associated with the project,
+  or no row if none exists
 
 _getProjectByItem(item: Item): optional (project: Project)
-  returns the Project associated with the item, if one exists
+  returns the project associated with the item,
+  or no row if none exists
 ```
+
 
 **Notes**
 
