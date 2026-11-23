@@ -31,7 +31,6 @@ const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 
 const selected = computed(() => graph.value?.sources.find(({ source }) => source === selectedId.value) ?? null);
 const annotated = computed(() => graph.value?.connections.some(({ notes }) => notes.length > 0) ?? false);
-const noted = computed(() => graph.value?.sources.some(({ notes }) => notes.length > 0) ?? false);
 const myId = computed(() => people.value?.members.find(({ username }) => username === me.value?.username)?.user ?? null);
 const isOwner = computed(() => myId.value !== null && myId.value === people.value?.owner);
 const canReview = computed(() => myId.value !== null && (people.value?.reviewers.includes(myId.value) ?? false));
@@ -127,13 +126,15 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
         </div>
         <div v-else class="drawing">
           <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" @select="selectedId = $event" />
-          <div class="legend">
-            <span><i class="line"></i>Followed link</span>
-            <span v-if="annotated"><i class="line thick"></i>Link with a note</span>
-            <span v-if="noted"><i class="box"></i>Source with a note</span>
-            <button type="button" class="text-button" @click="canvas?.fit()">Fit to screen</button>
+          <div class="controls">
+            <button type="button" aria-label="Zoom out" @click="canvas?.zoom(0.8)">−</button>
+            <button type="button" aria-label="Zoom in" @click="canvas?.zoom(1.25)">+</button>
+            <button type="button" class="wide" @click="canvas?.fit()">Fit</button>
           </div>
-          <p v-if="selected === null" class="hint">Select a source to see its notes and where it led.</p>
+          <p class="hint">
+            {{ selected === null ? "Select a source to see its notes and where it led." : "" }}
+            <span v-if="annotated">A thick link has a note.</span>
+          </p>
         </div>
         <SourcePanel
           v-if="selected"
@@ -240,49 +241,40 @@ h1 {
   flex: 1;
   min-width: 0;
   display: flex;
-  background-image: radial-gradient(var(--color-line) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background: #f8f3e9;
 }
-.legend {
+.controls {
   position: absolute;
-  left: var(--space-4);
+  right: var(--space-3);
   bottom: var(--space-3);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-.legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.legend .line {
-  width: 22px;
-  border-top: 1.5px solid var(--color-link);
-}
-.legend .line.thick {
-  border-top: 3px solid var(--color-text);
-}
-.legend .box {
-  width: 16px;
-  height: 11px;
-  border: 3px double var(--color-text);
-  border-radius: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: var(--color-surface);
+  overflow: hidden;
 }
-.legend .text-button {
-  font-size: var(--text-xs);
-  font-weight: 400;
+.controls button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--color-line);
+  background: none;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
-  text-decoration: underline;
+}
+.controls button:first-child {
+  border-left: 0;
+}
+.controls button:hover {
+  color: var(--color-text);
+  background: var(--color-page);
 }
 .hint {
   position: absolute;
-  top: var(--space-3);
+  bottom: var(--space-3);
   left: var(--space-4);
+  pointer-events: none;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
@@ -322,9 +314,6 @@ h1 {
   .drawing {
     flex: none;
     height: 420px;
-  }
-  .legend .text-button {
-    display: none;
   }
 }
 </style>
