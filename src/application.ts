@@ -7,6 +7,7 @@ import { composition as sessionProjects } from "./compositions/session-projects.
 import { composition as projectGraphs } from "./compositions/project-graphs.ts";
 import { applicationConceptSet } from "./concepts.ts";
 import { composition as projectContributions } from "./compositions/project-contributions.ts";
+import { composition as projectMembers } from "./compositions/project-members.ts";
 
 /**
  * Builds GrabbitHole on a database; the HTTP server, the tests, and `sync-engine check` all use it.
@@ -27,6 +28,7 @@ export function assembleGrabbitHole(
       sessionProjects,
       projectGraphs,
       projectContributions,
+      projectMembers,
     },
   });
 }

@@ -20,6 +20,7 @@ export default {
       new URL("./design/compositions/session-projects.md", import.meta.url),
       new URL("./design/compositions/project-graphs.md", import.meta.url),
       new URL("./design/compositions/project-contributions.md", import.meta.url),
+      new URL("./design/compositions/project-members.md", import.meta.url),
     ],
   },
   projections: [httpWire({ policy: grabbitHolePolicy("http://localhost:3000"), name: "GrabbitHoleWireHttp" })],

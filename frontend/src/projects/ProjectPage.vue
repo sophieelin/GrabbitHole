@@ -1,0 +1,330 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import { call } from "../api/call.ts";
+import { api } from "../api/client.ts";
+import GraphCanvas from "../graph/GraphCanvas.vue";
+import type { Member, Note, PendingProposal, ProjectId, ProposalId, ResearchGraph, SourceId, UserId } from "../graph/types.ts";
+import { useSession } from "../reusable/session.ts";
+import { describeChange } from "./describe.ts";
+import PeopleDialog from "./PeopleDialog.vue";
+import ProposalList from "./ProposalList.vue";
+import SourcePanel from "./SourcePanel.vue";
+
+/**
+ * One project's research graph: the drawing, the selected source's details, the proposals waiting
+ * for review, and the project's people. Every change to the graph is a proposal a reviewer decides.
+ */
+const props = defineProps<{ project: string }>();
+const project = props.project as ProjectId;
+const { me } = useSession();
+
+const graph = ref<ResearchGraph | null>(null);
+const loadRefusal = ref("");
+const selectedId = ref<SourceId | null>(null);
+const busy = ref(false);
+const refusal = ref("");
+const notice = ref("");
+const pending = ref<PendingProposal[]>([]);
+const people = ref<{ owner: UserId; members: Member[]; reviewers: UserId[] } | null>(null);
+const showPeople = ref(false);
+const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
+
+const selected = computed(() => graph.value?.sources.find(({ source }) => source === selectedId.value) ?? null);
+const annotated = computed(() => graph.value?.connections.some(({ notes }) => notes.length > 0) ?? false);
+const noted = computed(() => graph.value?.sources.some(({ notes }) => notes.length > 0) ?? false);
+const myId = computed(() => people.value?.members.find(({ username }) => username === me.value?.username)?.user ?? null);
+const isOwner = computed(() => myId.value !== null && myId.value === people.value?.owner);
+const canReview = computed(() => myId.value !== null && (people.value?.reviewers.includes(myId.value) ?? false));
+const proposals = computed(() =>
+  graph.value === null ? [] : pending.value.map((row) => ({ ...row, summary: describeChange(row.change, graph.value!) })),
+);
+
+async function loadGraph() {
+  const result = await call("/projects/graph", api.projects.graph({ project }));
+  if ("failed" in result) loadRefusal.value = result.failed;
+  else graph.value = result.graph;
+}
+async function loadPending() {
+  const result = await call("/projects/contributions/pending", api.projects.contributions.pending({ project }));
+  if (!("failed" in result)) pending.value = result.proposals;
+}
+async function loadPeople() {
+  const result = await call("/projects/members", api.projects.members({ project }));
+  if (!("failed" in result)) {
+    people.value = { owner: result.owner, members: result.members, reviewers: result.reviewers.map(({ user }) => user) };
+  }
+}
+onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople()]));
+
+/** Submits one proposal, then shows it in the list waiting for review. */
+async function propose(path: string, request: Promise<{ proposal: ProposalId } | { error: string }>) {
+  busy.value = true;
+  refusal.value = "";
+  notice.value = "";
+  const result = await call(path, request);
+  busy.value = false;
+  if ("failed" in result) refusal.value = result.failed;
+  else {
+    notice.value = "Proposed. A reviewer decides whether it goes into the graph.";
+    await loadPending();
+  }
+}
+
+function proposeNote(text: string) {
+  if (selected.value === null) return;
+  const { source } = selected.value;
+  void propose("/projects/contributions/submit-source-note", api.projects.contributions["submit-source-note"]({ project, source, text }));
+}
+function proposeNoteRemoval(note: Note) {
+  void propose("/projects/contributions/submit-note-removal", api.projects.contributions["submit-note-removal"]({ project, note: note.note }));
+}
+function proposeRemoval() {
+  if (selected.value === null) return;
+  const { source } = selected.value;
+  void propose("/projects/contributions/submit-source-removal", api.projects.contributions["submit-source-removal"]({ project, source }));
+}
+
+async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
+  busy.value = true;
+  refusal.value = "";
+  notice.value = "";
+  const result = accepted
+    ? await call("/projects/contributions/accept", api.projects.contributions.accept({ proposal }))
+    : await call("/projects/contributions/reject", api.projects.contributions.reject({ proposal, reason }));
+  busy.value = false;
+  if ("failed" in result) refusal.value = result.failed;
+  else notice.value = accepted ? "Accepted. The graph is updated." : "Rejected.";
+  await Promise.all([loadPending(), accepted ? loadGraph() : null]);
+}
+</script>
+
+<template>
+  <section class="page">
+    <header class="heading">
+      <div>
+        <a class="back" href="#/">← All projects</a>
+        <h1>{{ graph?.name ?? "Project" }}</h1>
+      </div>
+      <div v-if="graph" class="tools">
+        <p class="counts">
+          {{ graph.sources.length }} {{ graph.sources.length === 1 ? "source" : "sources" }} ·
+          {{ graph.connections.length }} {{ graph.connections.length === 1 ? "connection" : "connections" }}
+        </p>
+        <button v-if="people" type="button" class="button outline" @click="showPeople = true">
+          People · {{ people.members.length }}
+        </button>
+      </div>
+    </header>
+
+    <p v-if="loadRefusal" class="refusal" role="alert">{{ loadRefusal }}</p>
+    <p v-else-if="graph === null" class="quiet">Loading the graph…</p>
+
+    <div v-else class="frame">
+      <div class="workspace">
+        <div v-if="graph.sources.length === 0" class="empty">
+          <h2>No sources yet</h2>
+          <p>Record a browsing session with the GrabbitHole extension, stop it, and add it to this project from the extension. The pages you visited and the links you followed will show up here.</p>
+        </div>
+        <div v-else class="drawing">
+          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" @select="selectedId = $event" />
+          <div class="legend">
+            <span><i class="line"></i>Followed link</span>
+            <span v-if="annotated"><i class="line thick"></i>Link with a note</span>
+            <span v-if="noted"><i class="box"></i>Source with a note</span>
+            <button type="button" class="text-button" @click="canvas?.fit()">Fit to screen</button>
+          </div>
+          <p v-if="selected === null" class="hint">Select a source to see its notes and where it led.</p>
+        </div>
+        <SourcePanel
+          v-if="selected"
+          :graph="graph"
+          :source="selected"
+          :busy="busy"
+          @select="selectedId = $event"
+          @close="selectedId = null"
+          @propose-note="proposeNote"
+          @propose-note-removal="proposeNoteRemoval"
+          @propose-removal="proposeRemoval"
+        />
+      </div>
+      <p v-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
+      <p v-else-if="notice" class="notice bar" role="status">{{ notice }}</p>
+      <ProposalList
+        v-if="proposals.length"
+        :proposals="proposals"
+        :can-review="canReview"
+        :busy="busy"
+        :refusal="refusal"
+        @accept="decide($event, true)"
+        @reject="(proposal, reason) => decide(proposal, false, reason)"
+      />
+    </div>
+    <PeopleDialog
+      v-if="showPeople && people && graph"
+      :project="project"
+      :name="graph.name"
+      :owner="people.owner"
+      :members="people.members"
+      :reviewers="people.reviewers"
+      :is-owner="isOwner"
+      @changed="loadPeople"
+      @close="showPeople = false"
+    />
+  </section>
+</template>
+
+<style scoped>
+.page {
+  max-width: 1168px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: calc(100vh - 110px);
+  min-height: 480px;
+}
+.heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.back {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.back:hover {
+  text-decoration: underline;
+}
+h1 {
+  font-size: 2.25rem;
+  overflow-wrap: anywhere;
+}
+.tools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.tools .button {
+  min-height: 34px;
+  font-size: var(--text-sm);
+}
+.counts {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.quiet {
+  color: var(--color-text-muted);
+}
+.frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.drawing {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  background-image: radial-gradient(var(--color-line) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.legend {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .line {
+  width: 22px;
+  border-top: 1.5px solid var(--color-link);
+}
+.legend .line.thick {
+  border-top: 3px solid var(--color-text);
+}
+.legend .box {
+  width: 16px;
+  height: 11px;
+  border: 3px double var(--color-text);
+  border-radius: 3px;
+  background: var(--color-surface);
+}
+.legend .text-button {
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+.hint {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.empty {
+  margin: auto;
+  max-width: 440px;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.empty h2 {
+  font-family: var(--font-title);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+.notice {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.bar {
+  padding: var(--space-2) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+@media (max-width: 800px) {
+  .page {
+    height: auto;
+  }
+  .heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+  .workspace {
+    flex-direction: column;
+  }
+  .drawing {
+    flex: none;
+    height: 420px;
+  }
+  .legend .text-button {
+    display: none;
+  }
+}
+</style>

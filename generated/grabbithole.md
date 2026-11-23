@@ -260,6 +260,42 @@ Concrete types:
 _Formers name result shapes evaluated when asked. The source former owns_
 _the authored explanation; this section records the generated shape._
 
+### the invitations of (user)
+
+```former
+Former "the invitations of (user)" — inputs (user); bindings (invitation, project, name); promises exactly one record — forms:
+  each Collaborating._pendingInvitations (user) has (invitation, project)
+    where Collaborating._project (project) has (name)
+    form a record of
+      invitation
+      name
+      project
+```
+
+### the members of (project)
+
+```former
+Former "the members of (project)" — inputs (project); bindings (member, username); promises exactly one record — forms:
+  each Collaborating._members (project) has (user: member)
+    where Registering._username (user: member) has (username)
+    form a record of
+      user: member
+      username
+```
+
+### the pending proposals for (target)
+
+```former
+Former "the pending proposals for (target)" — inputs (target); bindings (proposal, proposer, proposerName, change); promises exactly one record — forms:
+  each Contributing._pending (target) has (change, proposal, proposer)
+    where Registering._username (user: proposer) has (username: proposerName)
+    form a record of
+      change
+      proposal
+      proposer
+      proposerName
+```
+
 ### the projects of (user)
 
 ```former
@@ -311,6 +347,15 @@ Former "the research graph (graph)" — inputs (graph); bindings (name, source, 
             text: sourceNoteText
         source
         url
+```
+
+### the reviewers of (project)
+
+```former
+Former "the reviewers of (project)" — inputs (project); bindings (reviewer); promises exactly one record — forms:
+  each Collaborating._reviewers (project) has (user: reviewer)
+    form a record of
+      user: reviewer
 ```
 
 ## Reactions
@@ -1507,6 +1552,567 @@ then
   RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
 ```
 
+### projectMembers.AcceptInvitation
+
+Authored path: `projectMembers.AcceptInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 16.
+
+```reaction
+when RequestBoundary.request (invitation, path: "/invitations/accept", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.AcceptInvitation:invitee#2
+
+Authored path: `projectMembers.AcceptInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.AcceptInvitation
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/accept", requestId, session)
+  Collaborating._invitation (invitation) has (invitee: user, status: "PENDING")
+then
+  Collaborating.acceptInvitation (invitation, user)
+```
+
+### projectMembers.AcceptInvitation:invitee#3
+
+Authored path: `projectMembers.AcceptInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 16.
+
+```reaction
+when Collaborating.acceptInvitation (invitation, user), asked by projectMembers.AcceptInvitation:invitee#2
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/accept", requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectMembers.AcceptInvitation:noInvitation#2
+
+Authored path: `projectMembers.AcceptInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.AcceptInvitation
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/accept", requestId, session)
+  no Collaborating._invitation (invitation) has (invitee: user, status: "PENDING")
+then
+  RequestBoundary.respond (error: "INVITATION_NOT_FOUND", requestId)
+```
+
+### projectMembers.DeclineInvitation
+
+Authored path: `projectMembers.DeclineInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 17.
+
+```reaction
+when RequestBoundary.request (invitation, path: "/invitations/decline", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.DeclineInvitation:invitee#2
+
+Authored path: `projectMembers.DeclineInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.DeclineInvitation
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/decline", requestId, session)
+  Collaborating._invitation (invitation) has (invitee: user, status: "PENDING")
+then
+  Collaborating.declineInvitation (invitation, user)
+```
+
+### projectMembers.DeclineInvitation:invitee#3
+
+Authored path: `projectMembers.DeclineInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 17.
+
+```reaction
+when Collaborating.declineInvitation (invitation, user), asked by projectMembers.DeclineInvitation:invitee#2
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/decline", requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectMembers.DeclineInvitation:noInvitation#2
+
+Authored path: `projectMembers.DeclineInvitation`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.DeclineInvitation
+where
+  earlier, RequestBoundary.request (invitation, path: "/invitations/decline", requestId, session)
+  no Collaborating._invitation (invitation) has (invitee: user, status: "PENDING")
+then
+  RequestBoundary.respond (error: "INVITATION_NOT_FOUND", requestId)
+```
+
+### projectMembers.GrantReviewer
+
+Authored path: `projectMembers.GrantReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 18.
+
+```reaction
+when RequestBoundary.request (member, path: "/projects/reviewers/grant", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.GrantReviewer:notOwner#2
+
+Authored path: `projectMembers.GrantReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.GrantReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/grant", project, requestId, session)
+  Collaborating._project (project)
+  no Collaborating._project (project) has (owner: user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.GrantReviewer:owner#2
+
+Authored path: `projectMembers.GrantReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.GrantReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/grant", project, requestId, session)
+  Collaborating._project (project) has (owner: user)
+then
+  Collaborating.grantReviewer (member, owner: user, project)
+```
+
+### projectMembers.GrantReviewer:owner#3
+
+Authored path: `projectMembers.GrantReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 18.
+
+```reaction
+when Collaborating.grantReviewer (member, owner: user, project), asked by projectMembers.GrantReviewer:owner#2
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/grant", project, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectMembers.GrantReviewer:unknownProject#2
+
+Authored path: `projectMembers.GrantReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 18.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.GrantReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/grant", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectMembers.Invite
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.Invite:notOwner#2
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.Invite
+where
+  earlier, RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+  Collaborating._project (project)
+  no Collaborating._project (project) has (owner: user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.Invite:owner#2
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.Invite
+where
+  earlier, RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+  Collaborating._project (project) has (owner: user)
+  Registering._byUsername (username) has (user: invitee)
+then
+  Collaborating.invite (invitee, inviter: user, project)
+```
+
+### projectMembers.Invite:owner#3
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when Collaborating.invite (invitee, inviter: user, project, invitation), asked by projectMembers.Invite:owner#2
+where
+  earlier, RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+then
+  RequestBoundary.respond (invitation, requestId)
+```
+
+### projectMembers.Invite:unknownProject#2
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.Invite
+where
+  earlier, RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectMembers.Invite:unknownUser#2
+
+Authored path: `projectMembers.Invite`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.Invite
+where
+  earlier, RequestBoundary.request (path: "/projects/invite", project, requestId, session, username)
+  Collaborating._project (project) has (owner: user)
+  no Registering._byUsername (username)
+then
+  RequestBoundary.respond (error: "USER_NOT_FOUND", requestId)
+```
+
+### projectMembers.ListMembers
+
+Authored path: `projectMembers.ListMembers`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 12.
+
+```reaction
+when RequestBoundary.request (path: "/projects/members", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.ListMembers:member#2
+
+Authored path: `projectMembers.ListMembers`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListMembers
+where
+  earlier, RequestBoundary.request (path: "/projects/members", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._project (project) has (owner)
+then
+  RequestBoundary.respond (members: former "the members of (project)" with (project), owner, requestId, reviewers: former "the reviewers of (project)" with (project))
+```
+
+### projectMembers.ListMembers:notMember#2
+
+Authored path: `projectMembers.ListMembers`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListMembers
+where
+  earlier, RequestBoundary.request (path: "/projects/members", project, requestId, session)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.ListMembers:unknownProject#2
+
+Authored path: `projectMembers.ListMembers`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListMembers
+where
+  earlier, RequestBoundary.request (path: "/projects/members", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectMembers.ListMyInvitations
+
+Authored path: `projectMembers.ListMyInvitations`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 15.
+
+```reaction
+when RequestBoundary.request (path: "/invitations/mine", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.ListMyInvitations#2
+
+Authored path: `projectMembers.ListMyInvitations`.
+- Covered by [Project members](../design/compositions/project-members.md), line 7.
+- Covered by [Project members](../design/compositions/project-members.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListMyInvitations
+where
+  earlier, RequestBoundary.request (path: "/invitations/mine", requestId, session)
+then
+  RequestBoundary.respond (invitations: former "the invitations of (user)" with (user), requestId)
+```
+
+### projectMembers.ListPendingProposals
+
+Authored path: `projectMembers.ListPendingProposals`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 13.
+
+```reaction
+when RequestBoundary.request (path: "/projects/contributions/pending", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.ListPendingProposals:member#2
+
+Authored path: `projectMembers.ListPendingProposals`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListPendingProposals
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/pending", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+then
+  RequestBoundary.respond (proposals: former "the pending proposals for (target)" with (target), requestId)
+```
+
+### projectMembers.ListPendingProposals:notMember#2
+
+Authored path: `projectMembers.ListPendingProposals`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListPendingProposals
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/pending", project, requestId, session)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.ListPendingProposals:unknownProject#2
+
+Authored path: `projectMembers.ListPendingProposals`.
+- Covered by [Project members](../design/compositions/project-members.md), line 5.
+- Covered by [Project members](../design/compositions/project-members.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.ListPendingProposals
+where
+  earlier, RequestBoundary.request (path: "/projects/contributions/pending", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectMembers.RemoveMember
+
+Authored path: `projectMembers.RemoveMember`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 20.
+
+```reaction
+when RequestBoundary.request (member, path: "/projects/members/remove", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.RemoveMember:notOwner#2
+
+Authored path: `projectMembers.RemoveMember`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 20.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RemoveMember
+where
+  earlier, RequestBoundary.request (member, path: "/projects/members/remove", project, requestId, session)
+  Collaborating._project (project)
+  no Collaborating._project (project) has (owner: user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.RemoveMember:owner#2
+
+Authored path: `projectMembers.RemoveMember`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 20.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RemoveMember
+where
+  earlier, RequestBoundary.request (member, path: "/projects/members/remove", project, requestId, session)
+  Collaborating._project (project) has (owner: user)
+then
+  Collaborating.removeMember (member, owner: user, project)
+```
+
+### projectMembers.RemoveMember:owner#3
+
+Authored path: `projectMembers.RemoveMember`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 20.
+
+```reaction
+when Collaborating.removeMember (member, owner: user, project), asked by projectMembers.RemoveMember:owner#2
+where
+  earlier, RequestBoundary.request (member, path: "/projects/members/remove", project, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectMembers.RemoveMember:unknownProject#2
+
+Authored path: `projectMembers.RemoveMember`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 20.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RemoveMember
+where
+  earlier, RequestBoundary.request (member, path: "/projects/members/remove", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectMembers.RevokeReviewer
+
+Authored path: `projectMembers.RevokeReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 19.
+
+```reaction
+when RequestBoundary.request (member, path: "/projects/reviewers/revoke", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectMembers.RevokeReviewer:notOwner#2
+
+Authored path: `projectMembers.RevokeReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 19.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RevokeReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/revoke", project, requestId, session)
+  Collaborating._project (project)
+  no Collaborating._project (project) has (owner: user)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectMembers.RevokeReviewer:owner#2
+
+Authored path: `projectMembers.RevokeReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 19.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RevokeReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/revoke", project, requestId, session)
+  Collaborating._project (project) has (owner: user)
+then
+  Collaborating.revokeReviewer (member, owner: user, project)
+```
+
+### projectMembers.RevokeReviewer:owner#3
+
+Authored path: `projectMembers.RevokeReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 19.
+
+```reaction
+when Collaborating.revokeReviewer (member, owner: user, project), asked by projectMembers.RevokeReviewer:owner#2
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/revoke", project, requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectMembers.RevokeReviewer:unknownProject#2
+
+Authored path: `projectMembers.RevokeReviewer`.
+- Covered by [Project members](../design/compositions/project-members.md), line 9.
+- Covered by [Project members](../design/compositions/project-members.md), line 19.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectMembers.RevokeReviewer
+where
+  earlier, RequestBoundary.request (member, path: "/projects/reviewers/revoke", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
 ### reusable.accounts.identifying.Me
 
 Authored path: `reusable.accounts.identifying.Me`.
@@ -2135,7 +2741,11 @@ not listed here have no explicit input contract.
 - `/auth/logout` — requires `session`
 - `/auth/me` — requires `session`
 - `/auth/register` — requires `password`, `username`
+- `/invitations/accept` — requires `invitation`, `session`
+- `/invitations/decline` — requires `invitation`, `session`
+- `/invitations/mine` — requires `session`
 - `/projects/contributions/accept` — requires `proposal`, `session`
+- `/projects/contributions/pending` — requires `project`, `session`
 - `/projects/contributions/reject` — requires `proposal`, `reason`, `session`
 - `/projects/contributions/submit` — requires `other`, `project`, `session`
 - `/projects/contributions/submit-connection` — requires `destination`, `project`, `session`, `source`
@@ -2147,7 +2757,12 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
 - `/projects/create` — requires `name`, `session`
 - `/projects/graph` — requires `project`, `session`
+- `/projects/invite` — requires `project`, `session`, `username`
+- `/projects/members` — requires `project`, `session`
+- `/projects/members/remove` — requires `member`, `project`, `session`
 - `/projects/mine` — requires `session`
+- `/projects/reviewers/grant` — requires `member`, `project`, `session`
+- `/projects/reviewers/revoke` — requires `member`, `project`, `session`
 - `/sessions/graph` — requires `browsingSession`, `session`
 - `/sessions/start` — requires `session`
 - `/sessions/stop` — requires `browsingSession`, `session`
