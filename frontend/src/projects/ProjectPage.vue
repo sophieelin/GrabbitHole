@@ -43,7 +43,6 @@ const showPeople = ref(false);
 const groups = ref<Group[]>([]);
 const showGroups = ref(false);
 const groupRefusal = ref("");
-const focus = ref<GroupId | null>(null);
 
 /** Topic colors from the color study, given to groups in the order they were made. */
 const TOPIC_COLORS = ["#3e6a9a", "#286f6a", "#7b4f86", "#85601a", "#a84c6e"];
@@ -63,7 +62,7 @@ const groupOf = computed(() => {
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 
 const selected = computed(() => graph.value?.sources.find(({ source }) => source === selectedId.value) ?? null);
-const annotated = computed(() => graph.value?.connections.some(({ notes }) => notes.length > 0) ?? false);
+const noted = computed(() => graph.value?.sources.some(({ notes }) => notes.length > 0) ?? false);
 const myId = computed(() => people.value?.members.find(({ username }) => username === me.value?.username)?.user ?? null);
 const isOwner = computed(() => myId.value !== null && myId.value === people.value?.owner);
 const canReview = computed(() => myId.value !== null && (people.value?.reviewers.includes(myId.value) ?? false));
@@ -90,7 +89,6 @@ async function loadGroups() {
   const result = await call("/projects/groups", api.projects.groups({ project }));
   if ("failed" in result) return;
   groups.value = result.groups;
-  if (!result.groups.some(({ group }) => group === focus.value)) focus.value = null;
 }
 onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople(), loadGroups()]));
 
@@ -195,29 +193,17 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           <p>Record a browsing session with the GrabbitHole extension, stop it, and add it to this project from the extension. The pages you visited and the links you followed will show up here.</p>
         </div>
         <div v-else class="drawing">
-          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" :group-of="groupOf" :focus="focus" @select="selectedId = $event" />
-          <ul v-if="groupStyles.length" class="key" aria-label="Groups">
-            <li v-for="row in groupStyles" :key="row.group">
-              <button
-                type="button"
-                :class="{ on: focus === row.group }"
-                :style="{ color: row.color }"
-                :aria-pressed="focus === row.group"
-                :title="focus === row.group ? 'Show all sources' : `Show only ${row.name}`"
-                @click="focus = focus === row.group ? null : row.group"
-              >
-                <span class="dot" :style="{ background: row.color }"></span>{{ row.name }} · {{ row.count }}
-              </button>
-            </li>
-          </ul>
+          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" :groups="groupStyles" :group-of="groupOf" @select="selectedId = $event" />
           <div class="controls">
             <button type="button" aria-label="Zoom out" @click="canvas?.zoom(0.8)">−</button>
             <button type="button" aria-label="Zoom in" @click="canvas?.zoom(1.25)">+</button>
             <button type="button" class="wide" @click="canvas?.fit()">Fit</button>
           </div>
           <p class="hint">
-            {{ selected === null ? "Select a source to see its notes and where it led." : "" }}
-            <span v-if="annotated">A thick link has a note.</span>
+            <span><i class="start"></i>Where a session started</span>
+            <span><i class="line"></i>Led to</span>
+            <span v-if="noted"><i class="dot"></i>Has a note</span>
+            <span v-if="groupStyles.length">{{ selected === null ? "Click a source to see its links to other groups" : "Click the background to show everything" }}</span>
           </p>
         </div>
         <SourcePanel
@@ -341,45 +327,7 @@ h1 {
   flex: 1;
   min-width: 0;
   display: flex;
-  background: #f8f3e9;
-}
-.key {
-  position: absolute;
-  top: var(--space-3);
-  left: var(--space-3);
-  right: var(--space-3);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  pointer-events: none;
-}
-.key button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-full);
-  background: none;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  pointer-events: auto;
-}
-.key button:hover,
-.key button.on {
-  border-color: currentColor;
-  background: var(--color-surface);
-}
-.key .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  background: #faf6ee;
 }
 .controls {
   position: absolute;
@@ -412,9 +360,35 @@ h1 {
   position: absolute;
   bottom: var(--space-3);
   left: var(--space-4);
-  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  pointer-events: none;
+}
+.hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hint .start {
+  width: 24px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-text);
+}
+.hint .line {
+  width: 24px;
+  border-top: 2px solid #8f8a7f;
+}
+.hint .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
 }
 .empty {
   margin: auto;
