@@ -61,7 +61,7 @@ Since F3, the team has progressed from concept design toward a working alpha imp
 
 #### DiscoveryLinking (April)
 
-- Implement the Sessioning to DiscoveryLinking compositions to automatically create preliminary graphs and record visited sources and navigation connections.
-- Coordinate with Sophie on the session-to-graph association needed for integration.
-- Integrate with Grouping once Dylan's concept is ready.
-- Add end-to-end tests for the complete browsing-to-project-graph workflow.
+- Integrate the project graph-reading API with the frontend so users can view their project's research graph.
+- Coordinate with Dylan on graph visualization, using the existing graph data returned by DiscoveryLinking.
+- Add end-to-end integration tests for the complete browsing-to-project-graph workflow, including contribution approval, graph merging, and contributor attribution.
+- Integrate DiscoveryLinking with Grouping once Dylan's concept is ready.
