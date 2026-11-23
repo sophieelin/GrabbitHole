@@ -106,10 +106,20 @@ const addSection = document.getElementById("add");
 const addStatus = document.getElementById("addStatus");
 const knownSelect = document.getElementById("known");
 
-/** Shows the section for a stopped session. */
+/** Shows the section for a stopped session, greyed out once the session was added to a project. */
 async function showAdd(lastSession) {
   addSection.hidden = !lastSession?.browsingSession;
-  if (!addSection.hidden) await listKnown();
+  if (addSection.hidden) return;
+  const added = lastSession.addedTo;
+  for (const button of addSection.querySelectorAll("button")) button.disabled = Boolean(added);
+  if (added) addStatus.textContent = `Added to ${added}.`;
+  else await listKnown();
+}
+
+/** Remembers that the stopped session was added to the project `name`. */
+async function markAdded(name) {
+  const { lastSession } = await chrome.storage.local.get("lastSession");
+  await chrome.storage.local.set({ lastSession: { ...lastSession, addedTo: name } });
 }
 
 /** Lists the user's projects, from the server. */
@@ -162,7 +172,8 @@ document.getElementById("create").addEventListener("click", () => {
     await listKnown();
     const proposal = await proposeTo(project);
     await callOrThrow("/projects/contributions/accept", { proposal });
-    return `Created ${name} and added this session to it.`;
+    await markAdded(name);
+    return `Added to ${name}.`;
   });
 });
 
@@ -171,7 +182,9 @@ document.getElementById("propose").addEventListener("click", () => {
   if (!project) return;
   adding("Proposing…", async () => {
     await proposeTo(project);
-    return "Proposed. A reviewer in the project can now accept it.";
+    const name = knownSelect.selectedOptions[0].textContent;
+    await markAdded(name);
+    return `Added to ${name}. A reviewer in the project can now accept it.`;
   });
 });
 
