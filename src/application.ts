@@ -3,6 +3,7 @@ import type { Db } from "mongodb";
 import { composition as accounts } from "./compositions/reusable/accounts.ts";
 import { composition as passwords } from "./compositions/reusable/passwords.ts";
 import { composition as sessioning } from "./compositions/sessioning.ts";
+import { composition as sessionProjects } from "./compositions/session-projects.ts";
 import { composition as projectGraphs } from "./compositions/project-graphs.ts";
 import { applicationConceptSet } from "./concepts.ts";
 import { composition as projectContributions } from "./compositions/project-contributions.ts";
@@ -23,6 +24,7 @@ export function assembleGrabbitHole(
     composition: {
       reusable: { accounts, passwords },
       sessioning,
+      sessionProjects,
       projectGraphs,
       projectContributions,
     },
