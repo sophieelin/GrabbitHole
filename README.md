@@ -46,6 +46,8 @@ While you edit, run `bun run dev` in one terminal and `bun run --cwd frontend de
 
 Settings are in `.env` (copy `.env.example`). Never commit `.env`.
 
+To let members ask Claude to suggest topic groups, set `ANTHROPIC_API_KEY` (in `.env` on your machine, or as a variable on the deployed app). Without it everything else works and the "Suggest groups" button is hidden. The suggestion code is in `src/agents/` and its route is in `src/host/suggest.ts`.
+
 ## Where things are
 
 | | Design | Code | Tests |

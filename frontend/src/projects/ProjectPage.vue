@@ -22,6 +22,8 @@ import GroupsDialog from "./GroupsDialog.vue";
 import PeopleDialog from "./PeopleDialog.vue";
 import ProposalList from "./ProposalList.vue";
 import SourcePanel from "./SourcePanel.vue";
+import { canSuggestGroups, type Suggestion } from "./suggest.ts";
+import SuggestDialog from "./SuggestDialog.vue";
 
 /**
  * One project's research graph: the drawing, the selected source's details, the proposals waiting
@@ -43,6 +45,8 @@ const showPeople = ref(false);
 const groups = ref<Group[]>([]);
 const showGroups = ref(false);
 const groupRefusal = ref("");
+const canSuggest = ref(false);
+const showSuggest = ref(false);
 
 /** Topic colors from the color study, given to groups in the order they were made. */
 const TOPIC_COLORS = ["#3e6a9a", "#286f6a", "#7b4f86", "#85601a", "#a84c6e"];
@@ -90,7 +94,10 @@ async function loadGroups() {
   if ("failed" in result) return;
   groups.value = result.groups;
 }
-onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople(), loadGroups()]));
+onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople(), loadGroups(), canSuggestGroups().then((can) => (canSuggest.value = can))]));
+
+/** Sources in no group. Claude is only asked about these, so the button shows only when there are some. */
+const ungrouped = computed(() => graph.value?.sources.filter(({ source }) => !groupOf.value.has(source)).length ?? 0);
 
 /** Runs one change to the groups, then reloads them. Returns what the endpoint answered, or null if it refused. */
 async function changeGroups<T extends object>(path: string, request: Promise<T>) {
@@ -114,6 +121,20 @@ function setGroup(group: GroupId | null) {
     ? changeGroups("/projects/groups/unassign", api.projects.groups.unassign({ project, source }))
     : changeGroups("/projects/groups/assign", api.projects.groups.assign({ group, source })));
 }
+/** Makes the groups Claude suggested that the member kept, and puts each one's sources in it. */
+async function applySuggestions(suggestions: Suggestion[]) {
+  for (const { name, group, sources } of suggestions) {
+    // A new group is made first. If one with that name appeared in the meantime, it is used instead.
+    const target = group ?? (await createGroup(name))?.group ?? groups.value.find((row) => row.name.toLowerCase() === name.toLowerCase())?.group;
+    if (target === undefined) return;
+    groupRefusal.value = "";
+    for (const { source } of sources) {
+      if ((await changeGroups("/projects/groups/assign", api.projects.groups.assign({ group: target, source }))) === null) return;
+    }
+  }
+  showSuggest.value = false;
+}
+
 /** Makes a group and puts the selected source in it. */
 async function newGroupForSelected(name: string) {
   const source = selected.value?.source;
@@ -176,6 +197,7 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           {{ graph.sources.length }} {{ graph.sources.length === 1 ? "source" : "sources" }} ·
           {{ graph.connections.length }} {{ graph.connections.length === 1 ? "connection" : "connections" }}
         </p>
+        <button v-if="canSuggest && ungrouped > 0" type="button" class="button outline" @click="((groupRefusal = ''), (showSuggest = true))">Suggest groups</button>
         <button type="button" class="button outline" @click="showGroups = true">Groups · {{ groups.length }}</button>
         <button v-if="people" type="button" class="button outline" @click="showPeople = true">
           People · {{ people.members.length }}
@@ -222,7 +244,7 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           @propose-removal="proposeRemoval"
         />
       </div>
-      <p v-if="groupRefusal && !showGroups" class="refusal bar" role="alert">{{ groupRefusal }}</p>
+      <p v-if="groupRefusal && !showGroups && !showSuggest" class="refusal bar" role="alert">{{ groupRefusal }}</p>
       <p v-else-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
       <p v-else-if="notice" class="notice bar" role="status">{{ notice }}</p>
       <ProposalList
@@ -245,6 +267,15 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
       @rename="renameGroup"
       @remove="removeGroup"
       @close="((showGroups = false), (groupRefusal = ''))"
+    />
+    <SuggestDialog
+      v-if="showSuggest && graph"
+      :project="project"
+      :name="graph.name"
+      :applying="busy"
+      :refusal="groupRefusal"
+      @apply="applySuggestions"
+      @close="((showSuggest = false), (groupRefusal = ''))"
     />
     <PeopleDialog
       v-if="showPeople && people && graph"
