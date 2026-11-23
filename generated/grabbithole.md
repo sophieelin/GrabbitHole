@@ -75,6 +75,7 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 - `_members(project: Project) : many (user: User)`
 - `_reviewers(project: Project) : many (user: User)`
 - `_invitation(invitation: Invitation) : optional (project: Project, invitee: User, status: InvitationStatus)`
+- `_projectsOf(user: User) : many (project: Project, name: String)`
 - `_pendingInvitations(user: User) : many (invitation: Invitation, project: Project)`
 - `_canReview(project: Project, user: User) : one (allowed: Flag)`
 - `_canView(project: Project, user: User) : one (allowed: Flag)`

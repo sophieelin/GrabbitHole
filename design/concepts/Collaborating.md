@@ -187,6 +187,9 @@ _reviewers(project: Project) : many (user: User)
 _invitation(invitation: Invitation) : optional (project: Project, invitee: User, status: InvitationStatus)
   Returns the invitation's project, invitee, and status, or no row for an unknown invitation.
 
+_projectsOf(user: User) : many (project: Project, name: String)
+  Returns each project the user belongs to the members of, with its name, ordered by name and then by project; no rows for a user in no project.
+
 _pendingInvitations(user: User) : many (invitation: Invitation, project: Project)
   Returns all pending invitations for the given user.
 
