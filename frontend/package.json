@@ -8,11 +8,13 @@
     "typecheck": "vue-tsc -b"
   },
   "dependencies": {
-    "vue": "^3.5.43",
     "@mit-sdg/sync-engine": "1.1.0",
-    "@mit-sdg/sync-engine-http": "1.1.0"
+    "@mit-sdg/sync-engine-http": "1.1.0",
+    "cytoscape": "^3.35.0",
+    "vue": "^3.5.43"
   },
   "devDependencies": {
+    "@types/cytoscape": "^3.21.9",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.9",
     "@vue/tsconfig": "^0.9.1",
