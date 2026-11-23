@@ -163,6 +163,16 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
+  "/projects/create": {
+    input: {
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["createProject"]>[0], ["name"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "project": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["createProject"]>>, ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "ITEM_ALREADY_ASSOCIATED" | "ITEM_ALREADY_SET" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
+  };
   "/projects/graph": {
     input: {
       "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
@@ -204,6 +214,18 @@ export type GrabbitHoleWire = {
       };
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
+  };
+  "/projects/mine": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "projects": {
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["name"]>>;
+        "project": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["project"]>>;
+      }[];
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
   "/sessions/graph": {
     input: {
@@ -410,6 +432,15 @@ export type GrabbitHoleWireHttp = {
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
+  "/projects/create": {
+    input: {
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["createProject"]>[0], ["name"]>>;
+    };
+    output: {
+      "project": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["createProject"]>>, ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
   "/projects/graph": {
     input: {
       "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
@@ -450,6 +481,16 @@ export type GrabbitHoleWireHttp = {
       };
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/mine": {
+    input: Record<string, never>;
+    output: {
+      "projects": {
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["name"]>>;
+        "project": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["project"]>>;
+      }[];
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/sessions/graph": {
     input: {

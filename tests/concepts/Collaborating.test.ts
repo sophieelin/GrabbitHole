@@ -547,6 +547,19 @@ test("simultaneous associations cannot assign one graph twice", async () => {
   expect(failures[0]!.reason).toBeInstanceOf(ItemAlreadyAssociated);
 });
 
+test("_projectsOf lists the projects a user is a member of, by name", async () => {
+  const { collaborating } = await setup();
+  const { project: roman } = await collaborating.createProject({ owner: maya, name: "Roman History" });
+  const { project: aqueducts } = await collaborating.createProject({ owner: maya, name: "Aqueducts" });
+  await collaborating.createProject({ owner: sam, name: "Sam's own" });
+
+  expect(await collaborating._projectsOf({ user: maya })).toEqual([
+    { project: aqueducts, name: "Aqueducts" },
+    { project: roman, name: "Roman History" },
+  ]);
+  expect(await collaborating._projectsOf({ user: "nobody" as User })).toEqual([]);
+});
+
 
 
 });

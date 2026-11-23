@@ -3,8 +3,9 @@
   "name": "GrabbitHole",
   "version": "0.0.1",
   "description": "Records the pages you visit during a research session and how you got to each one.",
-  "permissions": ["storage", "declarativeNetRequest", "webNavigation"],
+  "permissions": ["storage", "declarativeNetRequest", "webNavigation", "sidePanel"],
   "host_permissions": ["http://localhost:3000/*", "http://localhost:5173/*", "https://*.mit-sdg.dev/*"],
   "background": { "service_worker": "background.js", "type": "module" },
-  "action": { "default_popup": "popup.html" }
+  "action": { "default_title": "Open GrabbitHole" },
+  "side_panel": { "default_path": "popup.html" }
 }

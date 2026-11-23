@@ -21,6 +21,7 @@ document.getElementById("check").addEventListener("click", async () => {
 
 const startButton = document.getElementById("start");
 const stopButton = document.getElementById("stop");
+const restartButton = document.getElementById("restart");
 const sessionStatus = document.getElementById("session");
 
 const pageList = document.getElementById("pages");
@@ -62,6 +63,7 @@ async function showSession() {
   const { recording, lastSession } = await chrome.storage.local.get(["recording", "lastSession"]);
   startButton.hidden = Boolean(recording);
   stopButton.hidden = !recording;
+  restartButton.hidden = !recording;
   if (recording) {
     const pages = recording.visited.length;
     sessionStatus.textContent = `Recording. ${pages} ${pages === 1 ? "page" : "pages"} so far.`;
@@ -74,6 +76,7 @@ async function showSession() {
   } else {
     pageList.replaceChildren();
   }
+  await showAdd(recording ? null : lastSession);
 }
 
 /**
@@ -96,6 +99,97 @@ function failure(code, body) {
   return `Unexpected answer (${code}): ${JSON.stringify(body)}`;
 }
 
+/*
+ * Adding a stopped session's graph to a project. A new project's only member and reviewer is its
+ * creator, so the extension proposes the graph and accepts it at once, which merges it. An existing
+ * project's reviewers accept or reject the proposal themselves.
+ */
+const addSection = document.getElementById("add");
+const addStatus = document.getElementById("addStatus");
+const knownSelect = document.getElementById("known");
+
+/** Shows the section for a stopped session, greyed out once the session was added to a project. */
+async function showAdd(lastSession) {
+  addSection.hidden = !lastSession?.browsingSession;
+  if (addSection.hidden) return;
+  const added = lastSession.addedTo;
+  for (const button of addSection.querySelectorAll("button")) button.disabled = Boolean(added);
+  if (added) addStatus.textContent = `Added to ${added}.`;
+  else await listKnown();
+}
+
+/** Remembers that the stopped session was added to the project `name`. */
+async function markAdded(name) {
+  const { lastSession } = await chrome.storage.local.get("lastSession");
+  await chrome.storage.local.set({ lastSession: { ...lastSession, addedTo: name } });
+}
+
+/** Lists the user's projects, from the server. */
+async function listKnown() {
+  const { status: code, body } = await ask({ type: "call", path: "/projects/mine" });
+  const projects = code === 200 ? body.projects : [];
+  knownSelect.replaceChildren(
+    ...projects.map(({ project, name }) => Object.assign(document.createElement("option"), { value: project, textContent: name })),
+  );
+  document.getElementById("existing").hidden = projects.length === 0;
+}
+
+/** Calls an endpoint; returns its body, or throws the message to show. HTTP refusals are categories. */
+async function callOrThrow(path, body) {
+  const { status: code, body: answer } = await ask({ type: "call", path, body });
+  if (code === 200) return answer;
+  const reasons = {
+    NOT_FOUND: "The server doesn't have that session or project (it may have restarted).",
+    CONFLICT: "Stop the session first.",
+    FORBIDDEN: "You aren't allowed to add this session to that project.",
+  };
+  throw new Error(reasons[answer?.error] ?? failure(code, answer));
+}
+
+/** Proposes the stopped session's graph to `project`; returns the proposal. */
+async function proposeTo(project) {
+  const { lastSession } = await chrome.storage.local.get("lastSession");
+  const { graph } = await callOrThrow("/sessions/graph", { browsingSession: lastSession.browsingSession });
+  const { proposal } = await callOrThrow("/projects/contributions/submit", { project, other: graph.graph });
+  return proposal;
+}
+
+/** Runs one add, showing its progress and outcome. */
+async function adding(working, task) {
+  addStatus.textContent = working;
+  try {
+    addStatus.textContent = await task();
+  } catch (error) {
+    addStatus.textContent = error.message;
+  }
+}
+
+document.getElementById("create").addEventListener("click", () => {
+  const input = document.getElementById("newProject");
+  const name = input.value.trim();
+  if (!name) return;
+  adding("Creating project…", async () => {
+    const { project } = await callOrThrow("/projects/create", { name });
+    input.value = "";
+    await listKnown();
+    const proposal = await proposeTo(project);
+    await callOrThrow("/projects/contributions/accept", { proposal });
+    await markAdded(name);
+    return `Added to ${name}.`;
+  });
+});
+
+document.getElementById("propose").addEventListener("click", () => {
+  const project = knownSelect.value;
+  if (!project) return;
+  adding("Proposing…", async () => {
+    await proposeTo(project);
+    const name = knownSelect.selectedOptions[0].textContent;
+    await markAdded(name);
+    return `Added to ${name}. A reviewer in the project can now accept it.`;
+  });
+});
+
 startButton.addEventListener("click", async () => {
   sessionStatus.textContent = "Starting…";
   const { status: code, body } = await ask({ type: "start" });
@@ -108,6 +202,16 @@ stopButton.addEventListener("click", async () => {
   const { status: code, body } = await ask({ type: "stop" });
   // 404 and 409: the server no longer has the session, or it had already stopped. Either way it is over.
   sessionStatus.textContent = [200, 404, 409].includes(code) ? "Session stopped." : failure(code, body);
+  await showSession();
+});
+
+// Stops the current session and starts a fresh one. Only the session just stopped is kept, so the
+// one before it can no longer be added to a project from here.
+restartButton.addEventListener("click", async () => {
+  sessionStatus.textContent = "Starting a new session…";
+  await ask({ type: "stop" });
+  const { status: code, body } = await ask({ type: "start" });
+  if (code !== 200) sessionStatus.textContent = failure(code, body);
   await showSession();
 });
 

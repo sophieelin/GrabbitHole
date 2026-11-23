@@ -17,6 +17,7 @@ export default {
       new URL("./design/compositions/reusable/accounts.md", import.meta.url),
       new URL("./design/compositions/reusable/passwords.md", import.meta.url),
       new URL("./design/compositions/sessioning.md", import.meta.url),
+      new URL("./design/compositions/session-projects.md", import.meta.url),
       new URL("./design/compositions/project-graphs.md", import.meta.url),
       new URL("./design/compositions/project-contributions.md", import.meta.url),
     ],

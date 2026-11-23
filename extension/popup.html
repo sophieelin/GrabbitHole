@@ -6,7 +6,9 @@
     <style>
       body { font: 13px system-ui, sans-serif; width: 260px; margin: 12px; }
       label { display: block; margin-bottom: 4px; }
-      input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+      input, select { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+      #add h3 { font-size: 13px; margin: 8px 0 4px; }
+      button:disabled { opacity: 0.5; cursor: default; }
       #status, #session { margin-top: 8px; white-space: pre-wrap; }
       #pages { margin: 8px 0 0; padding-left: 22px; max-height: 260px; overflow-y: auto; }
       #pages li { margin-bottom: 4px; overflow-wrap: anywhere; }
@@ -21,8 +23,21 @@
     <hr />
     <button id="start">Start session</button>
     <button id="stop" hidden>Stop session</button>
+    <button id="restart" hidden>New session</button>
     <div id="session"></div>
     <ol id="pages"></ol>
+    <section id="add" hidden>
+      <hr />
+      <h3>Add to a new project</h3>
+      <input id="newProject" placeholder="Project name" />
+      <button id="create">Create and add</button>
+      <div id="existing">
+        <h3>Propose to an existing project</h3>
+        <select id="known"></select>
+        <button id="propose">Propose</button>
+      </div>
+      <div id="addStatus"></div>
+    </section>
     <div id="status"></div>
     <script src="popup.js" type="module"></script>
   </body>

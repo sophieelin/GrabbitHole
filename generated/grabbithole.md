@@ -75,6 +75,7 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 - `_members(project: Project) : many (user: User)`
 - `_reviewers(project: Project) : many (user: User)`
 - `_invitation(invitation: Invitation) : optional (project: Project, invitee: User, status: InvitationStatus)`
+- `_projectsOf(user: User) : many (project: Project, name: String)`
 - `_pendingInvitations(user: User) : many (invitation: Invitation, project: Project)`
 - `_canReview(project: Project, user: User) : one (allowed: Flag)`
 - `_canView(project: Project, user: User) : one (allowed: Flag)`
@@ -258,6 +259,16 @@ Concrete types:
 
 _Formers name result shapes evaluated when asked. The source former owns_
 _the authored explanation; this section records the generated shape._
+
+### the projects of (user)
+
+```former
+Former "the projects of (user)" — inputs (user); bindings (project, name); promises exactly one record — forms:
+  each Collaborating._projectsOf (user) has (name, project)
+    form a record of
+      name
+      project
+```
 
 ### the research graph (graph)
 
@@ -1398,6 +1409,7 @@ then
 Authored path: `projectGraphs.CreateProjectGraph`.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 15.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 5.
 
 ```reaction
 when Collaborating.createProject (name, project)
@@ -1410,6 +1422,7 @@ then
 Authored path: `projectGraphs.CreateProjectGraph`.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 5.
 - Covered by [Project graphs](../design/compositions/project-graphs.md), line 15.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 5.
 
 ```reaction
 when DiscoveryLinking.createGraph (name, graph), asked by projectGraphs.CreateProjectGraph
@@ -1667,6 +1680,90 @@ where
   no Registering._byUsername (username)
 then
   RequestBoundary.respond (error: "INVALID_CREDENTIALS", requestId)
+```
+
+### sessionProjects.CreateProject
+
+Authored path: `sessionProjects.CreateProject`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 3.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
+
+```reaction
+when RequestBoundary.request (name, path: "/projects/create", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### sessionProjects.CreateProject#2
+
+Authored path: `sessionProjects.CreateProject`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 3.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessionProjects.CreateProject
+where
+  earlier, RequestBoundary.request (name, path: "/projects/create", requestId, session)
+then
+  Collaborating.createProject (name, owner: user)
+```
+
+### sessionProjects.CreateProject:noGraph#3
+
+Authored path: `sessionProjects.CreateProject`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 3.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
+
+```reaction
+when Collaborating.createProject (name, owner: user, project), asked by sessionProjects.CreateProject#2
+at the flow's settlement frontier
+where
+  no Collaborating._getItem (project)
+  earlier, RequestBoundary.request (name, path: "/projects/create", requestId, session)
+then
+  RequestBoundary.respond (error: "PROJECT_GRAPH_NOT_FOUND", requestId)
+```
+
+### sessionProjects.CreateProject:ready#3
+
+Authored path: `sessionProjects.CreateProject`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 3.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
+
+```reaction
+when Collaborating.createProject (name, owner: user, project), asked by sessionProjects.CreateProject#2
+at the flow's settlement frontier
+where
+  Collaborating._getItem (project)
+  earlier, RequestBoundary.request (name, path: "/projects/create", requestId, session)
+then
+  RequestBoundary.respond (project, requestId)
+```
+
+### sessionProjects.ListMyProjects
+
+Authored path: `sessionProjects.ListMyProjects`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 7.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 11.
+
+```reaction
+when RequestBoundary.request (path: "/projects/mine", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### sessionProjects.ListMyProjects#2
+
+Authored path: `sessionProjects.ListMyProjects`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 7.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 11.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessionProjects.ListMyProjects
+where
+  earlier, RequestBoundary.request (path: "/projects/mine", requestId, session)
+then
+  RequestBoundary.respond (projects: former "the projects of (user)" with (user), requestId)
 ```
 
 ### sessioning.browsing.GetSessionGraph
@@ -2048,7 +2145,9 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-note-removal` — requires `note`, `project`, `session`
 - `/projects/contributions/submit-source-note` — requires `project`, `session`, `source`, `text`
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
+- `/projects/create` — requires `name`, `session`
 - `/projects/graph` — requires `project`, `session`
+- `/projects/mine` — requires `session`
 - `/sessions/graph` — requires `browsingSession`, `session`
 - `/sessions/start` — requires `session`
 - `/sessions/stop` — requires `browsingSession`, `session`

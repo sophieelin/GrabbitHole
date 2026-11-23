@@ -10,7 +10,7 @@
 const DEFAULT_SERVER = "http://localhost:3000";
 const ORIGIN_RULE = 1;
 
-/** The server's address, from the popup's setting. */
+/** The server's address, from the side panel's setting. */
 async function server() {
   const { server } = await chrome.storage.local.get("server");
   return server ?? DEFAULT_SERVER;
@@ -48,6 +48,9 @@ async function call(path, body = {}) {
   return { status: response.status, body: await response.json().catch(() => null) };
 }
 
+// Clicking the toolbar button opens the side panel, which stays open while the user browses.
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error("Setting up the side panel failed:", error));
+
 chrome.runtime.onInstalled.addListener(stripOrigin);
 chrome.runtime.onStartup.addListener(stripOrigin);
 chrome.storage.onChanged.addListener((changes) => {
@@ -72,7 +75,7 @@ chrome.storage.onChanged.addListener((changes) => {
  * recorded is sent again only when a link led to it; otherwise it just becomes the tab's last page,
  * so the next link branches from it.
  *
- * When the session stops, its pages are kept as `lastSession` so the popup can still list them.
+ * When the session stops, its pages are kept as `lastSession` so the side panel can still list them.
  */
 
 /** The active session's state, or null when no session is recording. */
@@ -94,10 +97,10 @@ async function startSession() {
   return answer;
 }
 
-/** Forgets the active session, keeping its pages as `lastSession` for the popup's list. */
+/** Forgets the active session, keeping it and its pages as `lastSession` for the side panel. */
 async function forget(state) {
-  const { visited, from, newTab } = state;
-  await chrome.storage.local.set({ lastSession: { visited, from, newTab } });
+  const { browsingSession, visited, from, newTab } = state;
+  await chrome.storage.local.set({ lastSession: { browsingSession, visited, from, newTab } });
   await chrome.storage.local.remove("recording");
 }
 
@@ -199,7 +202,7 @@ chrome.runtime.onMessage.addListener((message, _sender, reply) => {
   return true; // The reply is sent asynchronously.
 });
 
-// Registered after the message listener, so the popup still gets answers if this permission is missing.
+// Registered after the message listener, so the side panel still gets answers if this permission is missing.
 if (chrome.webNavigation) {
   // onCommitted, not onCompleted, because only it says how the navigation happened.
   chrome.webNavigation.onCommitted.addListener((details) => {

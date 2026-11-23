@@ -527,6 +527,22 @@ export class CollaboratingConcept<
         }];
   }
 
+  async _projectsOf({
+    user,
+  }: {
+    user: User;
+  }) {
+    const found = await this.projects
+      .find({ members: user } as never)
+      .sort({ name: 1, _id: 1 })
+      .toArray();
+
+    return found.map(({ _id, name }) => ({
+      project: _id,
+      name,
+    }));
+  }
+
   async _pendingInvitations({
     user,
   }: {
