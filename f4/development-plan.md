@@ -45,6 +45,18 @@ Since F3, the team has progressed from concept design toward a working alpha imp
 - Built the browser extension with **Start session** and **Stop session** buttons. Each tab is a path of its own, and only following a link creates a connection: a link connects from the last page in its tab, and a link opened in a new tab connects from the page that opened it. Typing an address, searching from the address bar, and the back button record the page with no connection, but the next link branches from it. The popup lists the session's pages in order, marking new tabs and pages reached from earlier ones.
 - Fixed `SubmitGraph` so only the submitting user's own session graph, from a session that has stopped, can be proposed for merging, never another user's session graph, a project's main graph, or a session still recording.
 
+**Initial setup, frontend, graph visualization, and Grouping (Dylan)**
+
+- Set up the project structure, database, and password sign-in that the other concepts build on.
+- Built the project list page with project creation and invitation accepting.
+- Built the project page, which draws the research graph as clusters of sources sorted by group and shows each source's notes, contributors, and connections.
+- Implemented the Grouping concept, where each group belongs to one graph and each source is in at most one group.
+- Added authenticated endpoints for project members to list, create, rename, and remove groups and to assign and unassign sources, and a sync that removes a source from its group when it is removed from the graph.
+- Added authenticated endpoints for listing members, inviting by username, accepting and declining invitations, granting and revoking reviewer, removing members, and listing pending proposals.
+- Built the people dialog, the groups dialog, and the review list where reviewers accept or reject pending proposals.
+- Restyled the browser extension panel to match the app's visual design.
+- Added tests for the Grouping concept and the new group, member, and proposal endpoints.
+
 ### Remaining work 
 
 #### Sessioning and browser extension
@@ -65,3 +77,11 @@ Since F3, the team has progressed from concept design toward a working alpha imp
 - Coordinate with Dylan on graph visualization, using the existing graph data returned by DiscoveryLinking.
 - Add end-to-end integration tests for the complete browsing-to-project-graph workflow, including contribution approval, graph merging, and contributor attribution.
 - Integrate DiscoveryLinking with Grouping once Dylan's concept is ready.
+
+#### Grouping and frontend (Dylan)
+
+- Add Claude topic grouping, which suggests groups for a graph's sources.
+- Build the preliminary graph review screen so users can view and edit a session graph before proposing it.
+- Add the remaining contribution actions to the frontend: editing notes, and adding and removing connections.
+- Show accepted and rejected proposals, including rejection reasons, once the proposal-status endpoint exists.
+- Show page titles on sources instead of names taken from the URL.
