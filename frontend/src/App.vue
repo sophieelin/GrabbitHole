@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { api } from "./api/client.ts";
 import PasswordForm from "./reusable/PasswordForm.vue";
 import SignIn from "./reusable/SignIn.vue";
 import { useSession } from "./reusable/session.ts";
@@ -9,6 +10,27 @@ import Menu from "./reusable/ui/Menu.vue";
 
 const { me, checked, load, signOut } = useSession();
 onMounted(load);
+
+// Temporary: the signed-in user's projects, and the links in one, until the project pages exist.
+type Projects = Exclude<Awaited<ReturnType<typeof api.projects.mine>>, { error: unknown }>["projects"];
+const projects = ref<Projects>([]);
+watch(me, async (signedIn) => {
+  const result = signedIn ? await api.projects.mine({}) : null;
+  projects.value = result && !("error" in result) ? result.projects : [];
+});
+
+const open = ref<{ name: string; urls: string[]; connections: string[] } | null>(null);
+async function openProject({ project, name }: Projects[number]) {
+  const result = await api.projects.graph({ project });
+  if ("error" in result) return;
+  const { sources, connections } = result.graph;
+  const urlOf = new Map(sources.map(({ source, url }) => [source, url]));
+  open.value = {
+    name,
+    urls: sources.map(({ url }) => url),
+    connections: connections.map(({ source, destination }) => `${urlOf.get(source)} → ${urlOf.get(destination)}`),
+  };
+}
 </script>
 
 <template>
@@ -24,7 +46,23 @@ onMounted(load);
     <!-- Placeholder: the project list and graph pages go here. -->
     <section v-if="me" class="card form-card">
       <h1>Your research projects</h1>
-      <p class="lead">Nothing here yet. Projects and research graphs are coming next.</p>
+      <ul v-if="projects.length" class="lead">
+        <li v-for="row in projects" :key="row.project">
+          <button type="button" class="text-button" @click="openProject(row)">{{ row.name }}</button>
+        </li>
+      </ul>
+      <p v-else class="lead">No projects yet.</p>
+      <div v-if="open" class="lead">
+        <h2>{{ open.name }}</h2>
+        <p v-if="!open.urls.length">No links yet.</p>
+        <ul>
+          <li v-for="url in open.urls" :key="url"><a :href="url" target="_blank" rel="noreferrer">{{ url }}</a></li>
+        </ul>
+        <h3 v-if="open.connections.length">Connections</h3>
+        <ul>
+          <li v-for="text in open.connections" :key="text">{{ text }}</li>
+        </ul>
+      </div>
     </section>
     <SignIn v-else icon="search" lead="Save, share, and build on your paths of research.">
       <PasswordForm />
