@@ -8,6 +8,7 @@ import { composition as projectGraphs } from "./compositions/project-graphs.ts";
 import { applicationConceptSet } from "./concepts.ts";
 import { composition as projectContributions } from "./compositions/project-contributions.ts";
 import { composition as projectMembers } from "./compositions/project-members.ts";
+import { composition as projectGroups } from "./compositions/project-groups.ts";
 
 /**
  * Builds GrabbitHole on a database; the HTTP server, the tests, and `sync-engine check` all use it.
@@ -29,6 +30,7 @@ export function assembleGrabbitHole(
       projectGraphs,
       projectContributions,
       projectMembers,
+      projectGroups,
     },
   });
 }

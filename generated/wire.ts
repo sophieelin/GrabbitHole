@@ -89,7 +89,7 @@ export type GrabbitHoleWire = {
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: Record<string, never>;
-    error: { error: AppWideError | "CONNECTION_EXISTS" | "CONNECTION_NOT_FOUND" | "CONNECTION_NOT_IN_GRAPH" | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOTE_NOT_FOUND" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" | "SAME_GRAPH" | "SOURCE_NOT_FOUND" | "SOURCE_NOT_IN_GRAPH" };
+    error: { error: AppWideError | "CONNECTION_EXISTS" | "CONNECTION_NOT_FOUND" | "CONNECTION_NOT_IN_GRAPH" | "FORBIDDEN" | "GRAPH_NOT_FOUND" | "INVALID_INPUT" | "NOTE_NOT_FOUND" | "NOT_GROUPED" | "NOT_SIGNED_IN" | "PROPOSAL_NOT_FOUND" | "PROPOSAL_NOT_PENDING" | "SAME_GRAPH" | "SOURCE_NOT_FOUND" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/contributions/pending": {
     input: {
@@ -258,6 +258,68 @@ export type GrabbitHoleWire = {
       };
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
+  };
+  "/projects/groups": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "groups": {
+        "group": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_groups"]>>>, ["group"]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_groups"]>>>, ["name"]>>;
+        "sources": {
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_items"]>>>, ["item"]>>;
+        }[];
+      }[];
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_NOT_FOUND" };
+  };
+  "/projects/groups/assign": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["assign"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["assign"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "GROUP_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SOURCE_NOT_IN_GRAPH" };
+  };
+  "/projects/groups/create": {
+    input: {
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["createGroup"]>[0], ["name"]>>;
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "group": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["createGroup"]>>, ["group"]>>;
+    };
+    error: { error: AppWideError | "EMPTY_NAME" | "FORBIDDEN" | "INVALID_INPUT" | "NAME_TAKEN" | "NOT_SIGNED_IN" | "PROJECT_NOT_FOUND" };
+  };
+  "/projects/groups/remove": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["removeGroup"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "GROUP_NOT_FOUND" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
+  "/projects/groups/rename": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["renameGroup"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["renameGroup"]>[0], ["name"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "EMPTY_NAME" | "FORBIDDEN" | "GROUP_NOT_FOUND" | "INVALID_INPUT" | "NAME_TAKEN" | "NOT_SIGNED_IN" };
+  };
+  "/projects/groups/unassign": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["unassign"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_GROUPED" | "NOT_SIGNED_IN" | "PROJECT_NOT_FOUND" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/invite": {
     input: {
@@ -462,7 +524,7 @@ export type GrabbitHoleWireHttp = {
       "proposal": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["_proposal"]>[0], ["proposal"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["accept"]>[0], ["proposal"]>]>>;
     };
     output: Record<string, never>;
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/pending": {
     input: {
@@ -619,6 +681,62 @@ export type GrabbitHoleWireHttp = {
       };
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+    };
+    output: {
+      "groups": {
+        "group": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_groups"]>>>, ["group"]>>;
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_groups"]>>>, ["name"]>>;
+        "sources": {
+          "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["_items"]>>>, ["item"]>>;
+        }[];
+      }[];
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups/assign": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["assign"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+      "source": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["assign"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups/create": {
+    input: {
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["createGroup"]>[0], ["name"]>>;
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+    };
+    output: {
+      "group": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Grouping"]["createGroup"]>>, ["group"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups/remove": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["removeGroup"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups/rename": {
+    input: {
+      "group": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["renameGroup"]>[0], ["group"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["_group"]>[0], ["group"]>]>>;
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["renameGroup"]>[0], ["name"]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/groups/unassign": {
+    input: {
+      "project": Jsonify<OneOf<[AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_getItem"]>[0], ["project"]>]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_project"]>[0], ["project"]>]>>;
+      "source": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Grouping"]["unassign"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+    };
+    output: Record<string, never>;
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/invite": {
     input: {

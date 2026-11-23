@@ -3,9 +3,22 @@ import { computed, onMounted, ref } from "vue";
 import { call } from "../api/call.ts";
 import { api } from "../api/client.ts";
 import GraphCanvas from "../graph/GraphCanvas.vue";
-import type { Member, Note, PendingProposal, ProjectId, ProposalId, ResearchGraph, SourceId, UserId } from "../graph/types.ts";
+import type {
+  Group,
+  GroupId,
+  GroupStyle,
+  Member,
+  Note,
+  PendingProposal,
+  ProjectId,
+  ProposalId,
+  ResearchGraph,
+  SourceId,
+  UserId,
+} from "../graph/types.ts";
 import { useSession } from "../reusable/session.ts";
 import { describeChange } from "./describe.ts";
+import GroupsDialog from "./GroupsDialog.vue";
 import PeopleDialog from "./PeopleDialog.vue";
 import ProposalList from "./ProposalList.vue";
 import SourcePanel from "./SourcePanel.vue";
@@ -27,6 +40,26 @@ const notice = ref("");
 const pending = ref<PendingProposal[]>([]);
 const people = ref<{ owner: UserId; members: Member[]; reviewers: UserId[] } | null>(null);
 const showPeople = ref(false);
+const groups = ref<Group[]>([]);
+const showGroups = ref(false);
+const groupRefusal = ref("");
+const focus = ref<GroupId | null>(null);
+
+/** Topic colors from the color study, given to groups in the order they were made. */
+const TOPIC_COLORS = ["#3e6a9a", "#286f6a", "#7b4f86", "#85601a", "#a84c6e"];
+const groupStyles = computed<GroupStyle[]>(() =>
+  groups.value.map(({ group, name, sources }, index) => ({
+    group,
+    name,
+    color: TOPIC_COLORS[index % TOPIC_COLORS.length]!,
+    count: sources.length,
+  })),
+);
+const groupOf = computed(() => {
+  const found = new Map<SourceId, GroupStyle>();
+  groups.value.forEach(({ sources }, index) => sources.forEach(({ source }) => found.set(source, groupStyles.value[index]!)));
+  return found;
+});
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 
 const selected = computed(() => graph.value?.sources.find(({ source }) => source === selectedId.value) ?? null);
@@ -53,7 +86,42 @@ async function loadPeople() {
     people.value = { owner: result.owner, members: result.members, reviewers: result.reviewers.map(({ user }) => user) };
   }
 }
-onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople()]));
+async function loadGroups() {
+  const result = await call("/projects/groups", api.projects.groups({ project }));
+  if ("failed" in result) return;
+  groups.value = result.groups;
+  if (!result.groups.some(({ group }) => group === focus.value)) focus.value = null;
+}
+onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople(), loadGroups()]));
+
+/** Runs one change to the groups, then reloads them. Returns what the endpoint answered, or null if it refused. */
+async function changeGroups<T extends object>(path: string, request: Promise<T>) {
+  busy.value = true;
+  groupRefusal.value = "";
+  const result = await call(path, request);
+  busy.value = false;
+  if ("failed" in result) groupRefusal.value = result.failed;
+  await loadGroups();
+  return "failed" in result ? null : result;
+}
+const createGroup = (name: string) => changeGroups("/projects/groups/create", api.projects.groups.create({ project, name }));
+const renameGroup = (group: GroupId, name: string) =>
+  changeGroups("/projects/groups/rename", api.projects.groups.rename({ group, name }));
+const removeGroup = (group: GroupId) => changeGroups("/projects/groups/remove", api.projects.groups.remove({ group }));
+
+function setGroup(group: GroupId | null) {
+  if (selected.value === null) return;
+  const { source } = selected.value;
+  void (group === null
+    ? changeGroups("/projects/groups/unassign", api.projects.groups.unassign({ project, source }))
+    : changeGroups("/projects/groups/assign", api.projects.groups.assign({ group, source })));
+}
+/** Makes a group and puts the selected source in it. */
+async function newGroupForSelected(name: string) {
+  const source = selected.value?.source;
+  const made = await createGroup(name);
+  if (made && source) await changeGroups("/projects/groups/assign", api.projects.groups.assign({ group: made.group, source }));
+}
 
 /** Submits one proposal, then shows it in the list waiting for review. */
 async function propose(path: string, request: Promise<{ proposal: ProposalId } | { error: string }>) {
@@ -93,7 +161,8 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
   busy.value = false;
   if ("failed" in result) refusal.value = result.failed;
   else notice.value = accepted ? "Accepted. The graph is updated." : "Rejected.";
-  await Promise.all([loadPending(), accepted ? loadGraph() : null]);
+  // An accepted removal also takes the source out of its group.
+  await Promise.all([loadPending(), accepted ? loadGraph() : null, accepted ? loadGroups() : null]);
 }
 </script>
 
@@ -109,6 +178,7 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           {{ graph.sources.length }} {{ graph.sources.length === 1 ? "source" : "sources" }} ·
           {{ graph.connections.length }} {{ graph.connections.length === 1 ? "connection" : "connections" }}
         </p>
+        <button type="button" class="button outline" @click="showGroups = true">Groups · {{ groups.length }}</button>
         <button v-if="people" type="button" class="button outline" @click="showPeople = true">
           People · {{ people.members.length }}
         </button>
@@ -125,7 +195,21 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           <p>Record a browsing session with the GrabbitHole extension, stop it, and add it to this project from the extension. The pages you visited and the links you followed will show up here.</p>
         </div>
         <div v-else class="drawing">
-          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" @select="selectedId = $event" />
+          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" :group-of="groupOf" :focus="focus" @select="selectedId = $event" />
+          <ul v-if="groupStyles.length" class="key" aria-label="Groups">
+            <li v-for="row in groupStyles" :key="row.group">
+              <button
+                type="button"
+                :class="{ on: focus === row.group }"
+                :style="{ color: row.color }"
+                :aria-pressed="focus === row.group"
+                :title="focus === row.group ? 'Show all sources' : `Show only ${row.name}`"
+                @click="focus = focus === row.group ? null : row.group"
+              >
+                <span class="dot" :style="{ background: row.color }"></span>{{ row.name }} · {{ row.count }}
+              </button>
+            </li>
+          </ul>
           <div class="controls">
             <button type="button" aria-label="Zoom out" @click="canvas?.zoom(0.8)">−</button>
             <button type="button" aria-label="Zoom in" @click="canvas?.zoom(1.25)">+</button>
@@ -141,6 +225,10 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           :graph="graph"
           :source="selected"
           :busy="busy"
+          :groups="groupStyles"
+          :group="groupOf.get(selected.source) ?? null"
+          @set-group="setGroup"
+          @new-group="newGroupForSelected"
           @select="selectedId = $event"
           @close="selectedId = null"
           @propose-note="proposeNote"
@@ -148,7 +236,8 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           @propose-removal="proposeRemoval"
         />
       </div>
-      <p v-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
+      <p v-if="groupRefusal && !showGroups" class="refusal bar" role="alert">{{ groupRefusal }}</p>
+      <p v-else-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
       <p v-else-if="notice" class="notice bar" role="status">{{ notice }}</p>
       <ProposalList
         v-if="proposals.length"
@@ -160,6 +249,17 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
         @reject="(proposal, reason) => decide(proposal, false, reason)"
       />
     </div>
+    <GroupsDialog
+      v-if="showGroups && graph"
+      :name="graph.name"
+      :groups="groupStyles"
+      :busy="busy"
+      :refusal="groupRefusal"
+      @create="createGroup"
+      @rename="renameGroup"
+      @remove="removeGroup"
+      @close="((showGroups = false), (groupRefusal = ''))"
+    />
     <PeopleDialog
       v-if="showPeople && people && graph"
       :project="project"
@@ -242,6 +342,44 @@ h1 {
   min-width: 0;
   display: flex;
   background: #f8f3e9;
+}
+.key {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.key button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+.key button:hover,
+.key button.on {
+  border-color: currentColor;
+  background: var(--color-surface);
+}
+.key .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
 }
 .controls {
   position: absolute;

@@ -2,14 +2,21 @@
 import dagre from "@dagrejs/dagre";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { labelOf } from "./labels.ts";
-import type { ResearchGraph, SourceId } from "./types.ts";
+import type { GroupId, GroupStyle, ResearchGraph, SourceId } from "./types.ts";
 
 /**
  * Draws a research graph as a trail read left to right: each source is a card, and each followed
  * link is a curve from the page a researcher was on to the page they went to. Pages nobody arrived
  * at from another page sit in the first column. Drag the background to move and scroll to zoom.
  */
-const props = defineProps<{ graph: ResearchGraph; selected: SourceId | null }>();
+const props = defineProps<{
+  graph: ResearchGraph;
+  selected: SourceId | null;
+  /** The group each grouped source is in. A grouped card carries its group's color on its left edge. */
+  groupOf?: Map<SourceId, GroupStyle>;
+  /** When set, sources outside this group are faded. */
+  focus?: GroupId | null;
+}>();
 const emit = defineEmits<{ select: [source: SourceId | null] }>();
 
 const CARD = { width: 224, height: 56 };
@@ -173,10 +180,20 @@ defineExpose({ fit, zoom });
         :key="card.source.source"
         type="button"
         class="card"
-        :class="{ selected: card.source.source === selected }"
-        :style="{ left: `${card.left}px`, top: `${card.top}px`, width: `${CARD.width}px`, height: `${CARD.height}px` }"
+        :class="{
+          selected: card.source.source === selected,
+          grouped: groupOf?.has(card.source.source),
+          faded: focus != null && card.source.source !== selected && groupOf?.get(card.source.source)?.group !== focus,
+        }"
+        :style="{
+          left: `${card.left}px`,
+          top: `${card.top}px`,
+          width: `${CARD.width}px`,
+          height: `${CARD.height}px`,
+          '--group': groupOf?.get(card.source.source)?.color,
+        }"
         :aria-pressed="card.source.source === selected"
-        :title="card.source.url"
+        :title="groupOf?.has(card.source.source) ? `${groupOf.get(card.source.source)!.name} · ${card.source.url}` : card.source.url"
         @click="emit('select', card.source.source)"
       >
         <span class="title">{{ card.page || card.site }}</span>
@@ -246,14 +263,32 @@ defineExpose({ fit, zoom });
   cursor: pointer;
   transition:
     border-color 0.12s,
-    box-shadow 0.12s;
+    box-shadow 0.12s,
+    opacity 0.12s;
+}
+.card.selected:not(.grouped) {
+  border-left-color: var(--color-text);
+}
+.card:hover:not(.grouped):not(.selected) {
+  border-left-color: var(--color-text-muted);
+}
+.card.grouped {
+  padding-left: 10px;
+  border-left: 5px solid var(--group);
+}
+.card.faded {
+  opacity: 0.35;
 }
 .card:hover {
-  border-color: var(--color-text-muted);
+  border-top-color: var(--color-text-muted);
+  border-right-color: var(--color-text-muted);
+  border-bottom-color: var(--color-text-muted);
   box-shadow: 0 2px 8px rgba(30, 40, 51, 0.1);
 }
 .card.selected {
-  border-color: var(--color-text);
+  border-top-color: var(--color-text);
+  border-right-color: var(--color-text);
+  border-bottom-color: var(--color-text);
   box-shadow:
     0 0 0 1px var(--color-text),
     0 4px 14px rgba(30, 40, 51, 0.14);
