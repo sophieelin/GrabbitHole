@@ -74,6 +74,7 @@ async function showSession() {
   } else {
     pageList.replaceChildren();
   }
+  await showAdd(recording ? null : lastSession);
 }
 
 /**
@@ -95,6 +96,84 @@ function failure(code, body) {
   if (code === 0) return body.error;
   return `Unexpected answer (${code}): ${JSON.stringify(body)}`;
 }
+
+/*
+ * Adding a stopped session's graph to a project. A new project's only member and reviewer is its
+ * creator, so the extension proposes the graph and accepts it at once, which merges it. An existing
+ * project's reviewers accept or reject the proposal themselves.
+ */
+const addSection = document.getElementById("add");
+const addStatus = document.getElementById("addStatus");
+const knownSelect = document.getElementById("known");
+
+/** Shows the section for a stopped session. */
+async function showAdd(lastSession) {
+  addSection.hidden = !lastSession?.browsingSession;
+  if (!addSection.hidden) await listKnown();
+}
+
+/** Lists the user's projects, from the server. */
+async function listKnown() {
+  const { status: code, body } = await ask({ type: "call", path: "/projects/mine" });
+  const projects = code === 200 ? body.projects : [];
+  knownSelect.replaceChildren(
+    ...projects.map(({ project, name }) => Object.assign(document.createElement("option"), { value: project, textContent: name })),
+  );
+  document.getElementById("existing").hidden = projects.length === 0;
+}
+
+/** Calls an endpoint; returns its body, or throws the message to show. HTTP refusals are categories. */
+async function callOrThrow(path, body) {
+  const { status: code, body: answer } = await ask({ type: "call", path, body });
+  if (code === 200) return answer;
+  const reasons = {
+    NOT_FOUND: "The server doesn't have that session or project (it may have restarted).",
+    CONFLICT: "Stop the session first.",
+    FORBIDDEN: "You aren't allowed to add this session to that project.",
+  };
+  throw new Error(reasons[answer?.error] ?? failure(code, answer));
+}
+
+/** Proposes the stopped session's graph to `project`; returns the proposal. */
+async function proposeTo(project) {
+  const { lastSession } = await chrome.storage.local.get("lastSession");
+  const { graph } = await callOrThrow("/sessions/graph", { browsingSession: lastSession.browsingSession });
+  const { proposal } = await callOrThrow("/projects/contributions/submit", { project, other: graph.graph });
+  return proposal;
+}
+
+/** Runs one add, showing its progress and outcome. */
+async function adding(working, task) {
+  addStatus.textContent = working;
+  try {
+    addStatus.textContent = await task();
+  } catch (error) {
+    addStatus.textContent = error.message;
+  }
+}
+
+document.getElementById("create").addEventListener("click", () => {
+  const input = document.getElementById("newProject");
+  const name = input.value.trim();
+  if (!name) return;
+  adding("Creating project…", async () => {
+    const { project } = await callOrThrow("/projects/create", { name });
+    input.value = "";
+    await listKnown();
+    const proposal = await proposeTo(project);
+    await callOrThrow("/projects/contributions/accept", { proposal });
+    return `Created ${name} and added this session to it.`;
+  });
+});
+
+document.getElementById("propose").addEventListener("click", () => {
+  const project = knownSelect.value;
+  if (!project) return;
+  adding("Proposing…", async () => {
+    await proposeTo(project);
+    return "Proposed. A reviewer in the project can now accept it.";
+  });
+});
 
 startButton.addEventListener("click", async () => {
   sessionStatus.textContent = "Starting…";

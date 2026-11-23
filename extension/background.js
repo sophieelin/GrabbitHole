@@ -97,10 +97,10 @@ async function startSession() {
   return answer;
 }
 
-/** Forgets the active session, keeping its pages as `lastSession` for the side panel's list. */
+/** Forgets the active session, keeping it and its pages as `lastSession` for the side panel. */
 async function forget(state) {
-  const { visited, from, newTab } = state;
-  await chrome.storage.local.set({ lastSession: { visited, from, newTab } });
+  const { browsingSession, visited, from, newTab } = state;
+  await chrome.storage.local.set({ lastSession: { browsingSession, visited, from, newTab } });
   await chrome.storage.local.remove("recording");
 }
 
