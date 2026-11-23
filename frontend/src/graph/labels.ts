@@ -33,8 +33,28 @@ export function labelOf(url: string): SourceLabel {
   return { site, page };
 }
 
-/** One line naming a source, for lists and headings. */
-export function titleOf(url: string): string {
+/**
+ * A short name for a source, to fit inside a pill on the graph. A search is named by its words in
+ * quotes. A page whose address ends in an id rather than words (a DOI, an article number) is named
+ * by its site, since the id says nothing to a reader.
+ */
+export function shortName(url: string, limit = 28): string {
   const { site, page } = labelOf(url);
-  return page === "" ? site : `${page} · ${site}`;
+  let name = page;
+  if (name.startsWith("Search: ")) name = `“${name.slice(8)}”`;
+  else {
+    // Drop a trailing number left over from the address, such as a date stamp.
+    name = name.replace(/\s+\d+$/, "");
+    const looksLikeAnId = !name.includes(" ") && /\d{3,}/.test(name);
+    if (name === "" || looksLikeAnId) name = site;
+    else name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+  return name.length > limit ? `${name.slice(0, limit - 1).trimEnd()}…` : name;
+}
+
+/** One line naming a source, for lists and headings: its name, then its site when the name is not the site already. */
+export function titleOf(url: string): string {
+  const { site } = labelOf(url);
+  const name = shortName(url, 60);
+  return name === site ? site : `${name} · ${site}`;
 }

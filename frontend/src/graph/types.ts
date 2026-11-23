@@ -16,3 +16,12 @@ export type Member = Wire["/projects/members"]["output"]["members"][number];
 export type UserId = Member["user"];
 export type PendingProposal = Wire["/projects/contributions/pending"]["output"]["proposals"][number];
 export type Invitation = Wire["/invitations/mine"]["output"]["invitations"][number];
+export type Group = Wire["/projects/groups"]["output"]["groups"][number];
+export type GroupId = Group["group"];
+/** A group as the page draws it: its name, its color from the color study, and how many sources are in it. */
+export interface GroupStyle {
+  group: GroupId;
+  name: string;
+  color: string;
+  count: number;
+}

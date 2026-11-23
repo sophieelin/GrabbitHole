@@ -1,20 +1,39 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { labelOf, titleOf } from "../graph/labels.ts";
-import type { Note, ResearchGraph, Source, SourceId } from "../graph/types.ts";
+import type { GroupId, GroupStyle, Note, ResearchGraph, Source, SourceId } from "../graph/types.ts";
 
 /**
  * Everything recorded about one source: its URL, the notes on it, who contributed it, and the
  * pages it was reached from and led to. Changes are proposals, sent up for the page to submit.
  */
-const props = defineProps<{ graph: ResearchGraph; source: Source; busy: boolean }>();
+const props = defineProps<{ graph: ResearchGraph; source: Source; busy: boolean; groups: GroupStyle[]; group: GroupStyle | null }>();
 const emit = defineEmits<{
   select: [source: SourceId];
   close: [];
   proposeNote: [text: string];
   proposeNoteRemoval: [note: Note];
   proposeRemoval: [];
+  setGroup: [group: GroupId | null];
+  newGroup: [name: string];
 }>();
+
+/** Choosing "New group…" swaps the list for a name box; the new group takes this source. */
+const naming = ref(false);
+const groupName = ref("");
+function pickGroup(event: Event) {
+  const select = event.target as HTMLSelectElement;
+  if (select.value === "new") {
+    naming.value = true;
+    select.value = props.group?.group ?? "";
+  } else emit("setGroup", select.value === "" ? null : (select.value as GroupId));
+}
+function makeGroup() {
+  if (groupName.value.trim() === "") return;
+  emit("newGroup", groupName.value.trim());
+  groupName.value = "";
+  naming.value = false;
+}
 
 const label = computed(() => labelOf(props.source.url));
 const urlOf = computed(() => new Map(props.graph.sources.map(({ source, url }) => [source, url])));
@@ -29,7 +48,13 @@ const reachedFrom = computed(() => neighbours("destination"));
 const ledTo = computed(() => neighbours("source"));
 
 const draft = ref("");
-watch(() => props.source.source, () => (draft.value = ""));
+watch(
+  () => props.source.source,
+  () => {
+    draft.value = "";
+    naming.value = false;
+  },
+);
 function submitNote() {
   if (draft.value.trim() === "") return;
   emit("proposeNote", draft.value.trim());
@@ -45,6 +70,23 @@ function submitNote() {
     </header>
     <h2>{{ label.page || label.site }}</h2>
     <a class="url" :href="source.url" target="_blank" rel="noreferrer">{{ source.url }}</a>
+
+    <section>
+      <h3>Group</h3>
+      <form v-if="naming" class="grouping" @submit.prevent="makeGroup">
+        <input v-model="groupName" type="text" maxlength="40" placeholder="Group name" aria-label="New group name" />
+        <button type="submit" class="button outline" :disabled="busy || groupName.trim() === ''">Add</button>
+        <button type="button" class="text-button small" @click="naming = false">Cancel</button>
+      </form>
+      <div v-else class="grouping">
+        <span v-if="group" class="dot" :style="{ background: group.color }"></span>
+        <select :value="group?.group ?? ''" :disabled="busy" aria-label="Group" @change="pickGroup">
+          <option value="">No group</option>
+          <option v-for="row in groups" :key="row.group" :value="row.group">{{ row.name }}</option>
+          <option value="new">New group…</option>
+        </select>
+      </div>
+    </section>
 
     <section>
       <h3>Notes</h3>
@@ -170,6 +212,32 @@ ul {
 }
 .link {
   overflow-wrap: anywhere;
+}
+.grouping {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.grouping select,
+.grouping input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font: inherit;
+  color: inherit;
+}
+.grouping .button {
+  min-height: 36px;
+}
+.dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 .add {
   display: flex;

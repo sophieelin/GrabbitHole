@@ -3,9 +3,22 @@ import { computed, onMounted, ref } from "vue";
 import { call } from "../api/call.ts";
 import { api } from "../api/client.ts";
 import GraphCanvas from "../graph/GraphCanvas.vue";
-import type { Member, Note, PendingProposal, ProjectId, ProposalId, ResearchGraph, SourceId, UserId } from "../graph/types.ts";
+import type {
+  Group,
+  GroupId,
+  GroupStyle,
+  Member,
+  Note,
+  PendingProposal,
+  ProjectId,
+  ProposalId,
+  ResearchGraph,
+  SourceId,
+  UserId,
+} from "../graph/types.ts";
 import { useSession } from "../reusable/session.ts";
 import { describeChange } from "./describe.ts";
+import GroupsDialog from "./GroupsDialog.vue";
 import PeopleDialog from "./PeopleDialog.vue";
 import ProposalList from "./ProposalList.vue";
 import SourcePanel from "./SourcePanel.vue";
@@ -27,10 +40,28 @@ const notice = ref("");
 const pending = ref<PendingProposal[]>([]);
 const people = ref<{ owner: UserId; members: Member[]; reviewers: UserId[] } | null>(null);
 const showPeople = ref(false);
+const groups = ref<Group[]>([]);
+const showGroups = ref(false);
+const groupRefusal = ref("");
+
+/** Topic colors from the color study, given to groups in the order they were made. */
+const TOPIC_COLORS = ["#3e6a9a", "#286f6a", "#7b4f86", "#85601a", "#a84c6e"];
+const groupStyles = computed<GroupStyle[]>(() =>
+  groups.value.map(({ group, name, sources }, index) => ({
+    group,
+    name,
+    color: TOPIC_COLORS[index % TOPIC_COLORS.length]!,
+    count: sources.length,
+  })),
+);
+const groupOf = computed(() => {
+  const found = new Map<SourceId, GroupStyle>();
+  groups.value.forEach(({ sources }, index) => sources.forEach(({ source }) => found.set(source, groupStyles.value[index]!)));
+  return found;
+});
 const canvas = ref<InstanceType<typeof GraphCanvas> | null>(null);
 
 const selected = computed(() => graph.value?.sources.find(({ source }) => source === selectedId.value) ?? null);
-const annotated = computed(() => graph.value?.connections.some(({ notes }) => notes.length > 0) ?? false);
 const noted = computed(() => graph.value?.sources.some(({ notes }) => notes.length > 0) ?? false);
 const myId = computed(() => people.value?.members.find(({ username }) => username === me.value?.username)?.user ?? null);
 const isOwner = computed(() => myId.value !== null && myId.value === people.value?.owner);
@@ -54,7 +85,41 @@ async function loadPeople() {
     people.value = { owner: result.owner, members: result.members, reviewers: result.reviewers.map(({ user }) => user) };
   }
 }
-onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople()]));
+async function loadGroups() {
+  const result = await call("/projects/groups", api.projects.groups({ project }));
+  if ("failed" in result) return;
+  groups.value = result.groups;
+}
+onMounted(() => Promise.all([loadGraph(), loadPending(), loadPeople(), loadGroups()]));
+
+/** Runs one change to the groups, then reloads them. Returns what the endpoint answered, or null if it refused. */
+async function changeGroups<T extends object>(path: string, request: Promise<T>) {
+  busy.value = true;
+  groupRefusal.value = "";
+  const result = await call(path, request);
+  busy.value = false;
+  if ("failed" in result) groupRefusal.value = result.failed;
+  await loadGroups();
+  return "failed" in result ? null : result;
+}
+const createGroup = (name: string) => changeGroups("/projects/groups/create", api.projects.groups.create({ project, name }));
+const renameGroup = (group: GroupId, name: string) =>
+  changeGroups("/projects/groups/rename", api.projects.groups.rename({ group, name }));
+const removeGroup = (group: GroupId) => changeGroups("/projects/groups/remove", api.projects.groups.remove({ group }));
+
+function setGroup(group: GroupId | null) {
+  if (selected.value === null) return;
+  const { source } = selected.value;
+  void (group === null
+    ? changeGroups("/projects/groups/unassign", api.projects.groups.unassign({ project, source }))
+    : changeGroups("/projects/groups/assign", api.projects.groups.assign({ group, source })));
+}
+/** Makes a group and puts the selected source in it. */
+async function newGroupForSelected(name: string) {
+  const source = selected.value?.source;
+  const made = await createGroup(name);
+  if (made && source) await changeGroups("/projects/groups/assign", api.projects.groups.assign({ group: made.group, source }));
+}
 
 /** Submits one proposal, then shows it in the list waiting for review. */
 async function propose(path: string, request: Promise<{ proposal: ProposalId } | { error: string }>) {
@@ -94,7 +159,8 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
   busy.value = false;
   if ("failed" in result) refusal.value = result.failed;
   else notice.value = accepted ? "Accepted. The graph is updated." : "Rejected.";
-  await Promise.all([loadPending(), accepted ? loadGraph() : null]);
+  // An accepted removal also takes the source out of its group.
+  await Promise.all([loadPending(), accepted ? loadGraph() : null, accepted ? loadGroups() : null]);
 }
 </script>
 
@@ -110,6 +176,7 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           {{ graph.sources.length }} {{ graph.sources.length === 1 ? "source" : "sources" }} ·
           {{ graph.connections.length }} {{ graph.connections.length === 1 ? "connection" : "connections" }}
         </p>
+        <button type="button" class="button outline" @click="showGroups = true">Groups · {{ groups.length }}</button>
         <button v-if="people" type="button" class="button outline" @click="showPeople = true">
           People · {{ people.members.length }}
         </button>
@@ -126,20 +193,28 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           <p>Record a browsing session with the GrabbitHole extension, stop it, and add it to this project from the extension. The pages you visited and the links you followed will show up here.</p>
         </div>
         <div v-else class="drawing">
-          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" @select="selectedId = $event" />
-          <div class="legend">
-            <span><i class="line"></i>Followed link</span>
-            <span v-if="annotated"><i class="line thick"></i>Link with a note</span>
-            <span v-if="noted"><i class="box"></i>Source with a note</span>
-            <button type="button" class="text-button" @click="canvas?.fit()">Fit to screen</button>
+          <GraphCanvas ref="canvas" :graph="graph" :selected="selectedId" :groups="groupStyles" :group-of="groupOf" @select="selectedId = $event" />
+          <div class="controls">
+            <button type="button" aria-label="Zoom out" @click="canvas?.zoom(0.8)">−</button>
+            <button type="button" aria-label="Zoom in" @click="canvas?.zoom(1.25)">+</button>
+            <button type="button" class="wide" @click="canvas?.fit()">Fit</button>
           </div>
-          <p v-if="selected === null" class="hint">Select a source to see its notes and where it led.</p>
+          <p class="hint">
+            <span><i class="start"></i>Where a session started</span>
+            <span><i class="line"></i>Led to</span>
+            <span v-if="noted"><i class="dot"></i>Has a note</span>
+            <span v-if="groupStyles.length">{{ selected === null ? "Click a source to see its links to other groups" : "Click the background to show everything" }}</span>
+          </p>
         </div>
         <SourcePanel
           v-if="selected"
           :graph="graph"
           :source="selected"
           :busy="busy"
+          :groups="groupStyles"
+          :group="groupOf.get(selected.source) ?? null"
+          @set-group="setGroup"
+          @new-group="newGroupForSelected"
           @select="selectedId = $event"
           @close="selectedId = null"
           @propose-note="proposeNote"
@@ -147,7 +222,8 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
           @propose-removal="proposeRemoval"
         />
       </div>
-      <p v-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
+      <p v-if="groupRefusal && !showGroups" class="refusal bar" role="alert">{{ groupRefusal }}</p>
+      <p v-else-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
       <p v-else-if="notice" class="notice bar" role="status">{{ notice }}</p>
       <ProposalList
         v-if="proposals.length"
@@ -159,6 +235,17 @@ async function decide(proposal: ProposalId, accepted: boolean, reason = "") {
         @reject="(proposal, reason) => decide(proposal, false, reason)"
       />
     </div>
+    <GroupsDialog
+      v-if="showGroups && graph"
+      :name="graph.name"
+      :groups="groupStyles"
+      :busy="busy"
+      :refusal="groupRefusal"
+      @create="createGroup"
+      @rename="renameGroup"
+      @remove="removeGroup"
+      @close="((showGroups = false), (groupRefusal = ''))"
+    />
     <PeopleDialog
       v-if="showPeople && people && graph"
       :project="project"
@@ -240,51 +327,68 @@ h1 {
   flex: 1;
   min-width: 0;
   display: flex;
-  background-image: radial-gradient(var(--color-line) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background: #faf6ee;
 }
-.legend {
+.controls {
   position: absolute;
-  left: var(--space-4);
+  right: var(--space-3);
   bottom: var(--space-3);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-.legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.legend .line {
-  width: 22px;
-  border-top: 1.5px solid var(--color-link);
-}
-.legend .line.thick {
-  border-top: 3px solid var(--color-text);
-}
-.legend .box {
-  width: 16px;
-  height: 11px;
-  border: 3px double var(--color-text);
-  border-radius: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: var(--color-surface);
+  overflow: hidden;
 }
-.legend .text-button {
-  font-size: var(--text-xs);
-  font-weight: 400;
+.controls button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--color-line);
+  background: none;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
-  text-decoration: underline;
+}
+.controls button:first-child {
+  border-left: 0;
+}
+.controls button:hover {
+  color: var(--color-text);
+  background: var(--color-page);
 }
 .hint {
   position: absolute;
-  top: var(--space-3);
+  bottom: var(--space-3);
   left: var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  pointer-events: none;
+}
+.hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.hint .start {
+  width: 24px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-text);
+}
+.hint .line {
+  width: 24px;
+  border-top: 2px solid #8f8a7f;
+}
+.hint .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
 }
 .empty {
   margin: auto;
@@ -322,9 +426,6 @@ h1 {
   .drawing {
     flex: none;
     height: 420px;
-  }
-  .legend .text-button {
-    display: none;
   }
 }
 </style>

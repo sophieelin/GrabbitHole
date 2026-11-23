@@ -7,7 +7,19 @@ const membersOnly = "Only members of this project can propose changes to it.";
 
 const ownerOnly = "Only the project's owner can do that.";
 
+const groupErrors = {
+  INVALID_REQUEST: "A group needs a name.",
+  CONFLICT: "A group with that name already exists.",
+  NOT_FOUND: "That group no longer exists.",
+  FORBIDDEN: "Only members of this project can change its groups.",
+};
+
 const messages: Record<string, Record<string, string>> = {
+  "/projects/groups/create": groupErrors,
+  "/projects/groups/rename": groupErrors,
+  "/projects/groups/remove": groupErrors,
+  "/projects/groups/assign": { ...groupErrors, NOT_FOUND: "That group or source no longer exists." },
+  "/projects/groups/unassign": { ...groupErrors, CONFLICT: "That source isn't in a group." },
   "/projects/invite": {
     NOT_FOUND: "Nobody has that username.",
     CONFLICT: "That person is already a member or already invited.",

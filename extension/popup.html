@@ -4,30 +4,48 @@
     <meta charset="utf-8" />
     <title>GrabbitHole</title>
     <style>
-      body { font: 13px system-ui, sans-serif; width: 260px; margin: 12px; }
-      label { display: block; margin-bottom: 4px; }
-      input, select { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
-      #add h3 { font-size: 13px; margin: 8px 0 4px; }
+      /* Colors and type follow the app: paper and ink, one rust button, Times for titles, monospace for URLs. */
+      :root { --paper: #f5efe3; --card: #fffdf8; --ink: #1e2833; --grey: #5b6470; --line: #e2dacb; --border: #d9cfbd; --rust: #a6482a; }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body { margin: 0; padding: 16px; min-width: 260px; background: var(--paper); color: var(--ink); font: 13px/1.45 Helvetica, Arial, sans-serif; }
+      h1 { margin: 0 0 12px; font: 700 20px "Times New Roman", Times, serif; }
+      h3 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey); }
+      section, .block { padding: 14px 0; border-top: 1px solid var(--border); }
+      label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 600; }
+      input, select { width: 100%; height: 34px; margin-bottom: 8px; padding: 0 10px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--card); color: inherit; font: inherit; }
+      input:focus, select:focus { outline: none; border-color: var(--ink); }
+      button { height: 34px; padding: 0 14px; border: 1.5px solid var(--border); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--ink); }
       button:disabled { opacity: 0.5; cursor: default; }
-      #status, #session { margin-top: 8px; white-space: pre-wrap; }
-      #pages { margin: 8px 0 0; padding-left: 22px; max-height: 260px; overflow-y: auto; }
-      #pages li { margin-bottom: 4px; overflow-wrap: anywhere; }
-      #pages .from { display: block; color: #666; font-size: 11px; }
-      hr { margin: 12px 0; border: none; border-top: 1px solid #ddd; }
+      #start { width: 100%; height: 40px; border-color: var(--rust); background: var(--rust); color: #fff; }
+      #stop { border-color: var(--ink); background: var(--ink); color: #fff; }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      #session { margin-top: 10px; font-weight: 600; }
+      #status, #addStatus { margin-top: 8px; font-size: 12px; color: var(--grey); white-space: pre-wrap; }
+      #pages { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: page; max-height: 300px; overflow-y: auto; }
+      #pages li { counter-increment: page; position: relative; padding: 6px 0 6px 26px; border-top: 1px solid var(--line); font: 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+      #pages li::before { content: counter(page); position: absolute; left: 0; width: 18px; text-align: right; color: var(--grey); }
+      #pages .from { display: block; margin-top: 1px; font: italic 12px "Times New Roman", Times, serif; color: var(--grey); }
+      #existing { margin-top: 14px; }
+      details { padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--grey); }
+      summary { cursor: pointer; }
+      details label { margin-top: 10px; color: var(--ink); }
     </style>
   </head>
   <body>
-    <label for="server">Server address</label>
-    <input id="server" type="url" placeholder="http://localhost:3000" />
-    <button id="check">Check sign-in</button>
-    <hr />
-    <button id="start">Start session</button>
-    <button id="stop" hidden>Stop session</button>
-    <button id="restart" hidden>New session</button>
-    <div id="session"></div>
-    <ol id="pages"></ol>
+    <h1>GrabbitHole</h1>
+    <div class="block">
+      <button id="start">Start session</button>
+      <div class="row">
+        <button id="stop" hidden>Stop session</button>
+        <button id="restart" hidden>New session</button>
+      </div>
+      <div id="session"></div>
+      <ol id="pages"></ol>
+    </div>
     <section id="add" hidden>
-      <hr />
       <h3>Add to a new project</h3>
       <input id="newProject" placeholder="Project name" />
       <button id="create">Create and add</button>
@@ -38,6 +56,12 @@
       </div>
       <div id="addStatus"></div>
     </section>
+    <details>
+      <summary>Server and sign-in</summary>
+      <label for="server">Server address</label>
+      <input id="server" type="url" placeholder="http://localhost:3000" />
+      <button id="check">Check sign-in</button>
+    </details>
     <div id="status"></div>
     <script src="popup.js" type="module"></script>
   </body>

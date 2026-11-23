@@ -26,8 +26,8 @@ Defined in [Authenticating](../design/concepts/Authenticating.md), line 1.
 
 #### Instances
 
-- `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 14.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 15.
+- `Authenticating` — instance of `Authenticating` — [GrabbitHole types](../design/types.md), line 16.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 17.
 
 ### Collaborating
 
@@ -84,9 +84,9 @@ Defined in [Collaborating](../design/concepts/Collaborating.md), line 2.
 
 #### Instances
 
-- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 27.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 29.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 28.
+- `Collaborating` — instance of `Collaborating` — [GrabbitHole types](../design/types.md), line 29.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 31.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 30.
 
 ### Contributing
 
@@ -113,10 +113,10 @@ Defined in [Contributing](../design/concepts/Contributing.md), line 2.
 
 #### Instances
 
-- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 31.
-  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 34.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 33.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 32.
+- `Contributing` — instance of `Contributing` — [GrabbitHole types](../design/types.md), line 33.
+  - `Change` is `Text` — [GrabbitHole types](../design/types.md), line 36.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 35.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 34.
 
 ### DiscoveryLinking
 
@@ -166,8 +166,41 @@ Defined in [DiscoveryLinking](../design/concepts/DiscoveryLinking.md), line 1.
 
 #### Instances
 
-- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 24.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 25.
+- `DiscoveryLinking` — instance of `DiscoveryLinking` — [GrabbitHole types](../design/types.md), line 26.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 27.
+
+### Grouping
+
+Defined in [Grouping](../design/concepts/Grouping.md), line 1.
+
+#### Actions
+
+- `createGroup(scope: Scope, name: String) : returns (group: Group)`
+  - Refuses `EMPTY_NAME`: A group needs a name.
+  - Refuses `NAME_TAKEN`: A group with this name already exists.
+- `renameGroup(group: Group, name: String) : returns ()`
+  - Refuses `GROUP_NOT_FOUND`: There is no such group.
+  - Refuses `EMPTY_NAME`: A group needs a name.
+  - Refuses `NAME_TAKEN`: A group with this name already exists.
+- `removeGroup(group: Group) : returns ()`
+  - Refuses `GROUP_NOT_FOUND`: There is no such group.
+- `assign(group: Group, item: Item) : returns ()`
+  - Refuses `GROUP_NOT_FOUND`: There is no such group.
+- `unassign(item: Item) : returns ()`
+  - Refuses `NOT_GROUPED`: This item is not in a group.
+
+#### Queries
+
+- `_group(group: Group) : optional (scope: Scope, name: String)`
+- `_groups(scope: Scope) : many (group: Group, name: String)`
+- `_items(group: Group) : many (item: Item)`
+- `_groupOf(item: Item) : optional (group: Group)`
+
+#### Instances
+
+- `Grouping` — instance of `Grouping` — [GrabbitHole types](../design/types.md), line 38.
+  - `Item` is `DiscoveryLinking.Source` — [GrabbitHole types](../design/types.md), line 39.
+  - `Scope` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 40.
 
 ### Registering
 
@@ -186,7 +219,7 @@ Defined in [Registering](../design/concepts/Registering.md), line 1.
 
 #### Instances
 
-- `Registering` — instance of `Registering` — [GrabbitHole types](../design/types.md), line 12.
+- `Registering` — instance of `Registering` — [GrabbitHole types](../design/types.md), line 14.
 
 ### Sessioning
 
@@ -216,9 +249,9 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 20.
-  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 22.
-  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 21.
+- `Sessioning` — instance of `Sessioning` — [GrabbitHole types](../design/types.md), line 22.
+  - `Item` is `DiscoveryLinking.Graph` — [GrabbitHole types](../design/types.md), line 24.
+  - `User` is `Registering.User` — [GrabbitHole types](../design/types.md), line 23.
 
 ### SignIn
 
@@ -234,14 +267,14 @@ Defined in [SignIn](../design/concepts/SignIn.md), line 1.
 
 #### Instances
 
-- `SignIn` — instance of `SignIn` — [GrabbitHole types](../design/types.md), line 17.
-  - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 18.
+- `SignIn` — instance of `SignIn` — [GrabbitHole types](../design/types.md), line 19.
+  - `Subject` is `Registering.User` — [GrabbitHole types](../design/types.md), line 20.
 
 ## Application types
 
 Concrete types:
 
-- `Text` — [GrabbitHole types](../design/types.md), line 8.
+- `Text` — [GrabbitHole types](../design/types.md), line 10.
 
 ## Computations
 
@@ -259,6 +292,19 @@ Concrete types:
 
 _Formers name result shapes evaluated when asked. The source former owns_
 _the authored explanation; this section records the generated shape._
+
+### the groups of (graph)
+
+```former
+Former "the groups of (graph)" — inputs (graph); bindings (group, name, source); promises exactly one record — forms:
+  each Grouping._groups (scope: graph) has (group, name)
+    form a record of
+      group
+      name
+      sources: each Grouping._items (group) has (item: source)
+        form a record of
+          source
+```
 
 ### the invitations of (user)
 
@@ -1552,6 +1598,534 @@ then
   RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
 ```
 
+### projectGroups.AssignSource
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.AssignSource:member#2
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.AssignSource
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: true)
+  DiscoveryLinking._source (source) has (graph)
+then
+  Grouping.assign (group, item: source)
+```
+
+### projectGroups.AssignSource:member#3
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when Grouping.assign (group, item: source), asked by projectGroups.AssignSource:member#2
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectGroups.AssignSource:notAProjectGraph#2
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.AssignSource
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+  Grouping._group (group) has (scope: graph)
+  no Collaborating._getProjectByItem (item: graph)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.AssignSource:notMember#2
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.AssignSource
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.AssignSource:sourceElsewhere#2
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.AssignSource
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: true)
+  no DiscoveryLinking._source (source) has (graph)
+then
+  RequestBoundary.respond (error: "SOURCE_NOT_IN_GRAPH", requestId)
+```
+
+### projectGroups.AssignSource:unknownGroup#2
+
+Authored path: `projectGroups.AssignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 16.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.AssignSource
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/assign", requestId, session, source)
+  no Grouping._group (group)
+then
+  RequestBoundary.respond (error: "GROUP_NOT_FOUND", requestId)
+```
+
+### projectGroups.CreateGroup
+
+Authored path: `projectGroups.CreateGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 13.
+
+```reaction
+when RequestBoundary.request (name, path: "/projects/groups/create", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.CreateGroup:member#2
+
+Authored path: `projectGroups.CreateGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.CreateGroup
+where
+  earlier, RequestBoundary.request (name, path: "/projects/groups/create", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: graph)
+then
+  Grouping.createGroup (name, scope: graph)
+```
+
+### projectGroups.CreateGroup:member#3
+
+Authored path: `projectGroups.CreateGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 13.
+
+```reaction
+when Grouping.createGroup (name, scope: graph, group), asked by projectGroups.CreateGroup:member#2
+where
+  earlier, RequestBoundary.request (name, path: "/projects/groups/create", project, requestId, session)
+then
+  RequestBoundary.respond (group, requestId)
+```
+
+### projectGroups.CreateGroup:notMember#2
+
+Authored path: `projectGroups.CreateGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.CreateGroup
+where
+  earlier, RequestBoundary.request (name, path: "/projects/groups/create", project, requestId, session)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.CreateGroup:unknownProject#2
+
+Authored path: `projectGroups.CreateGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 13.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.CreateGroup
+where
+  earlier, RequestBoundary.request (name, path: "/projects/groups/create", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectGroups.ListGroups
+
+Authored path: `projectGroups.ListGroups`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 12.
+
+```reaction
+when RequestBoundary.request (path: "/projects/groups", project, requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.ListGroups:member#2
+
+Authored path: `projectGroups.ListGroups`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.ListGroups
+where
+  earlier, RequestBoundary.request (path: "/projects/groups", project, requestId, session)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: graph)
+then
+  RequestBoundary.respond (groups: former "the groups of (graph)" with (graph), requestId)
+```
+
+### projectGroups.ListGroups:notMember#2
+
+Authored path: `projectGroups.ListGroups`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.ListGroups
+where
+  earlier, RequestBoundary.request (path: "/projects/groups", project, requestId, session)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.ListGroups:unknownProject#2
+
+Authored path: `projectGroups.ListGroups`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 5.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 12.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.ListGroups
+where
+  earlier, RequestBoundary.request (path: "/projects/groups", project, requestId, session)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectGroups.RemoveGroup
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.RemoveGroup:member#2
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RemoveGroup
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: true)
+then
+  Grouping.removeGroup (group)
+```
+
+### projectGroups.RemoveGroup:member#3
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when Grouping.removeGroup (group), asked by projectGroups.RemoveGroup:member#2
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectGroups.RemoveGroup:notAProjectGraph#2
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RemoveGroup
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  no Collaborating._getProjectByItem (item: graph)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.RemoveGroup:notMember#2
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RemoveGroup
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.RemoveGroup:unknownGroup#2
+
+Authored path: `projectGroups.RemoveGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 15.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RemoveGroup
+where
+  earlier, RequestBoundary.request (group, path: "/projects/groups/remove", requestId, session)
+  no Grouping._group (group)
+then
+  RequestBoundary.respond (error: "GROUP_NOT_FOUND", requestId)
+```
+
+### projectGroups.RenameGroup
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.RenameGroup:member#2
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RenameGroup
+where
+  earlier, RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: true)
+then
+  Grouping.renameGroup (group, name)
+```
+
+### projectGroups.RenameGroup:member#3
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when Grouping.renameGroup (group, name), asked by projectGroups.RenameGroup:member#2
+where
+  earlier, RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectGroups.RenameGroup:notAProjectGraph#2
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RenameGroup
+where
+  earlier, RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  no Collaborating._getProjectByItem (item: graph)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.RenameGroup:notMember#2
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RenameGroup
+where
+  earlier, RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+  Grouping._group (group) has (scope: graph)
+  Collaborating._getProjectByItem (item: graph) has (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.RenameGroup:unknownGroup#2
+
+Authored path: `projectGroups.RenameGroup`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 14.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.RenameGroup
+where
+  earlier, RequestBoundary.request (group, name, path: "/projects/groups/rename", requestId, session)
+  no Grouping._group (group)
+then
+  RequestBoundary.respond (error: "GROUP_NOT_FOUND", requestId)
+```
+
+### projectGroups.UnassignSource
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+then
+  SignIn.use (session)
+```
+
+### projectGroups.UnassignSource:member#2
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.UnassignSource
+where
+  earlier, RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: graph)
+  DiscoveryLinking._source (source) has (graph)
+then
+  Grouping.unassign (item: source)
+```
+
+### projectGroups.UnassignSource:member#3
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when Grouping.unassign (item: source), asked by projectGroups.UnassignSource:member#2
+where
+  earlier, RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+then
+  RequestBoundary.respond (requestId)
+```
+
+### projectGroups.UnassignSource:notMember#2
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.UnassignSource
+where
+  earlier, RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+  Collaborating._project (project)
+  Collaborating._canView (project, user) has (allowed: false)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
+```
+
+### projectGroups.UnassignSource:sourceElsewhere#2
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.UnassignSource
+where
+  earlier, RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: graph)
+  no DiscoveryLinking._source (source) has (graph)
+then
+  RequestBoundary.respond (error: "SOURCE_NOT_IN_GRAPH", requestId)
+```
+
+### projectGroups.UnassignSource:unknownProject#2
+
+Authored path: `projectGroups.UnassignSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 7.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 17.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectGroups.UnassignSource
+where
+  earlier, RequestBoundary.request (path: "/projects/groups/unassign", project, requestId, session, source)
+  no Collaborating._project (project)
+then
+  RequestBoundary.respond (error: "PROJECT_NOT_FOUND", requestId)
+```
+
+### projectGroups.UngroupRemovedSource
+
+Authored path: `projectGroups.UngroupRemovedSource`.
+- Covered by [Project groups](../design/compositions/project-groups.md), line 9.
+
+```reaction
+when DiscoveryLinking.removeSource (source)
+where
+  Grouping._groupOf (item: source)
+then
+  Grouping.unassign (item: source)
+```
+
 ### projectMembers.AcceptInvitation
 
 Authored path: `projectMembers.AcceptInvitation`.
@@ -2757,6 +3331,12 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
 - `/projects/create` — requires `name`, `session`
 - `/projects/graph` — requires `project`, `session`
+- `/projects/groups` — requires `project`, `session`
+- `/projects/groups/assign` — requires `group`, `session`, `source`
+- `/projects/groups/create` — requires `name`, `project`, `session`
+- `/projects/groups/remove` — requires `group`, `session`
+- `/projects/groups/rename` — requires `group`, `name`, `session`
+- `/projects/groups/unassign` — requires `project`, `session`, `source`
 - `/projects/invite` — requires `project`, `session`, `username`
 - `/projects/members` — requires `project`, `session`
 - `/projects/members/remove` — requires `member`, `project`, `session`
