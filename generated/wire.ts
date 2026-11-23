@@ -215,6 +215,18 @@ export type GrabbitHoleWire = {
     };
     error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "PROJECT_GRAPH_NOT_FOUND" | "PROJECT_NOT_FOUND" };
   };
+  "/projects/mine": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+    };
+    output: {
+      "projects": {
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["name"]>>;
+        "project": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["project"]>>;
+      }[];
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+  };
   "/sessions/graph": {
     input: {
       "browsingSession": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["_session"]>[0], ["session"]>>;
@@ -469,6 +481,16 @@ export type GrabbitHoleWireHttp = {
       };
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/mine": {
+    input: Record<string, never>;
+    output: {
+      "projects": {
+        "name": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["name"]>>;
+        "project": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_projectsOf"]>>>, ["project"]>>;
+      }[];
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/sessions/graph": {
     input: {

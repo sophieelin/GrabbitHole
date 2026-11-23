@@ -47,4 +47,22 @@ describe("Creating a project for a session", () => {
       error: "NOT_SIGNED_IN",
     });
   });
+
+  test("the signed-in user lists only their own projects, by name", async () => {
+    const { api, register } = await startGrabbitHole();
+    const researcher = await register("researcher");
+    const other = await register("other");
+    const create = async (who: typeof researcher, name: string) =>
+      ok(await api["/projects/create"]({ session: who.session, name })).project;
+    const roman = await create(researcher, "Roman Concrete");
+    const aqueducts = await create(researcher, "Aqueducts");
+    await create(other, "Someone else's");
+
+    expect(await api["/projects/mine"]({ session: researcher.session })).toEqual({
+      projects: [
+        { project: aqueducts, name: "Aqueducts" },
+        { project: roman, name: "Roman Concrete" },
+      ],
+    });
+  });
 });

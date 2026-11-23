@@ -260,6 +260,16 @@ Concrete types:
 _Formers name result shapes evaluated when asked. The source former owns_
 _the authored explanation; this section records the generated shape._
 
+### the projects of (user)
+
+```former
+Former "the projects of (user)" — inputs (user); bindings (project, name); promises exactly one record — forms:
+  each Collaborating._projectsOf (user) has (name, project)
+    form a record of
+      name
+      project
+```
+
 ### the research graph (graph)
 
 ```former
@@ -1676,7 +1686,7 @@ then
 
 Authored path: `sessionProjects.CreateProject`.
 - Covered by [Session projects](../design/compositions/session-projects.md), line 3.
-- Covered by [Session projects](../design/compositions/session-projects.md), line 8.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
 
 ```reaction
 when RequestBoundary.request (name, path: "/projects/create", requestId, session)
@@ -1688,7 +1698,7 @@ then
 
 Authored path: `sessionProjects.CreateProject`.
 - Covered by [Session projects](../design/compositions/session-projects.md), line 3.
-- Covered by [Session projects](../design/compositions/session-projects.md), line 8.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
 
 ```reaction
 when SignIn.use (session, subject: user), asked by sessionProjects.CreateProject
@@ -1702,7 +1712,7 @@ then
 
 Authored path: `sessionProjects.CreateProject`.
 - Covered by [Session projects](../design/compositions/session-projects.md), line 3.
-- Covered by [Session projects](../design/compositions/session-projects.md), line 8.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
 
 ```reaction
 when Collaborating.createProject (name, owner: user, project), asked by sessionProjects.CreateProject#2
@@ -1718,7 +1728,7 @@ then
 
 Authored path: `sessionProjects.CreateProject`.
 - Covered by [Session projects](../design/compositions/session-projects.md), line 3.
-- Covered by [Session projects](../design/compositions/session-projects.md), line 8.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 10.
 
 ```reaction
 when Collaborating.createProject (name, owner: user, project), asked by sessionProjects.CreateProject#2
@@ -1728,6 +1738,32 @@ where
   earlier, RequestBoundary.request (name, path: "/projects/create", requestId, session)
 then
   RequestBoundary.respond (project, requestId)
+```
+
+### sessionProjects.ListMyProjects
+
+Authored path: `sessionProjects.ListMyProjects`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 7.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 11.
+
+```reaction
+when RequestBoundary.request (path: "/projects/mine", requestId, session)
+then
+  SignIn.use (session)
+```
+
+### sessionProjects.ListMyProjects#2
+
+Authored path: `sessionProjects.ListMyProjects`.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 7.
+- Covered by [Session projects](../design/compositions/session-projects.md), line 11.
+
+```reaction
+when SignIn.use (session, subject: user), asked by sessionProjects.ListMyProjects
+where
+  earlier, RequestBoundary.request (path: "/projects/mine", requestId, session)
+then
+  RequestBoundary.respond (projects: former "the projects of (user)" with (user), requestId)
 ```
 
 ### sessioning.browsing.GetSessionGraph
@@ -2111,6 +2147,7 @@ not listed here have no explicit input contract.
 - `/projects/contributions/submit-source-removal` — requires `project`, `session`, `source`
 - `/projects/create` — requires `name`, `session`
 - `/projects/graph` — requires `project`, `session`
+- `/projects/mine` — requires `session`
 - `/sessions/graph` — requires `browsingSession`, `session`
 - `/sessions/start` — requires `session`
 - `/sessions/stop` — requires `browsingSession`, `session`
