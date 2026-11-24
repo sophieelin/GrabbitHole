@@ -25,6 +25,14 @@
 
 GrabbitHole is built on [sync-engine](https://github.com/mit-sdg/sync-engine), with a Vue frontend. The code started as a copy of [ConceptBox](https://github.com/mit-sdg/conceptbox), the course's example app (MIT license, in `LICENSE-conceptbox`), cut down to signing in, with our own concepts added on top.
 
+## Live Demo
+
+**Deployed application:** https://grabbithole.mit-sdg.dev/
+
+GrabbitHole allows researchers to record browsing sessions, visualize sources and connections, organize research into shared projects, and propose changes for review.
+
+The web application is publicly deployed. The companion Chrome extension must be installed separately using the instructions below.
+
 ## Run it
 
 You need [Bun](https://bun.sh) 1.3 or later.
@@ -48,6 +56,43 @@ Settings are in `.env` (copy `.env.example`). Never commit `.env`.
 
 To let members ask Claude to suggest topic groups, set `ANTHROPIC_API_KEY` (in `.env` on your machine, or as a variable on the deployed app). Without it everything else works and the "Suggest groups" button is hidden. The suggestion code is in `src/agents/` and its route is in `src/host/suggest.ts`.
 
+## Chrome Extension
+
+GrabbitHole includes a Chrome extension that records browsing sessions and sends the collected research paths to the application.
+
+### Installation
+
+1. Download or clone the GrabbitHole GitHub repository.
+2. Open Google Chrome and navigate to `chrome://extensions`.
+3. Enable **Developer mode** in the top-right corner.
+4. Click **Load unpacked**.
+5. Select the `extension/` folder from the repository, which contains `manifest.json`.
+6. Open GrabbitHole from Chrome's Extensions menu. The extension opens in Chrome's side panel.
+
+### Connect to the Deployed App
+
+1. Open the deployed application at https://grabbithole.mit-sdg.dev/ and sign in or register.
+2. Open the GrabbitHole Chrome extension.
+3. In the extension's **Server URL** field, enter:
+
+   `https://grabbithole.mit-sdg.dev`
+
+4. Save the server setting.
+
+The extension is now configured to communicate with the deployed GrabbitHole backend.
+
+### Using the Extension
+
+1. Start a browsing session from the extension.
+2. Browse websites and follow links as part of your research.
+3. Stop the session when finished.
+4. Use the extension to submit the recorded research graph to an existing project or create a new project.
+5. Open the project in the GrabbitHole web application to view its research graph.
+
+**Note:** Contributions submitted to an existing project may require approval from an authorized reviewer before appearing in the shared graph.
+
+The extension is currently distributed through the repository rather than the Chrome Web Store.
+
 ## Where things are
 
 | | Design | Code | Tests |
@@ -60,7 +105,15 @@ To let members ask Claude to suggest topic groups, set `ANTHROPIC_API_KEY` (in `
 | The Vue frontend | | `frontend/src/` | |
 | The browser extension | | `extension/` | |
 
-What is here now is signing in with a password: the concepts Registering, Authenticating, and SignIn, with the accounts and passwords compositions, all from ConceptBox. None of our own concepts are added yet.
+GrabbitHole currently includes the following application concepts:
+
+- **Registering, Authenticating, and SignIn:** User registration, password authentication, and sign-in sessions.
+- **Sessioning:** Records browsing sessions, visited URLs, and navigation relationships.
+- **DiscoveryLinking:** Manages research graphs, sources, connections, notes, and graph merging.
+- **Collaborating:** Manages shared projects, invitations, membership, and reviewer permissions.
+- **Contributing:** Manages proposed changes to shared research graphs, including submission, approval, rejection, and withdrawal at the concept level.
+
+The application integrates these concepts through sync-engine compositions. The frontend provides the user interface for interacting with research projects and visualizing graph data, while the Chrome extension records browsing activity.
 
 ## Add your concept
 
