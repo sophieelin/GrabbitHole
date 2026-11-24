@@ -33,6 +33,11 @@ GrabbitHole allows researchers to record browsing sessions, visualize sources an
 
 The web application is publicly deployed. The companion Chrome extension must be installed separately using the instructions below.
 
+
+### F4 Alpha Demo Video
+
+[Watch our F4 Alpha Demo on YouTube](https://youtu.be/6xoLLmk5ZkQ)
+
 ## Run it
 
 You need [Bun](https://bun.sh) 1.3 or later.
