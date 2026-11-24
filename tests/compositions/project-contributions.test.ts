@@ -1354,3 +1354,163 @@ test("an authorized reviewer accepts a connection note removal", async () => {
 
 
 });
+
+test("removals proposed together are decided one by one", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } = application.concepts;
+  const maya = await register("maya");
+  const sam = await register("sam");
+
+  const { project } = ok(await Collaborating.createProject({ owner: maya.user, name: "Roman History" }));
+  await application.whenIdle();
+  const [{ item: target }] = await Collaborating._getItem({ project });
+
+  // Sam is a member, not a reviewer, so Maya decides.
+  const { invitation } = ok(await Collaborating.invite({ project, inviter: maya.user, invitee: sam.user }));
+  ok(await Collaborating.acceptInvitation({ invitation, user: sam.user }));
+
+  const add = async (url: string) => ok(await DiscoveryLinking.addSource({ graph: target, url, contributor: maya.user })).source;
+  const a = await add("https://example.com/a");
+  const b = await add("https://example.com/b");
+  const c = await add("https://example.com/c");
+  const { connection } = ok(await DiscoveryLinking.addConnection({ graph: target, source: a, destination: b, contributor: maya.user }));
+
+  // Sam proposes removing all three together.
+  const batch = "batch-1";
+  const propose = async (source: typeof a) =>
+    ok(await api["/projects/contributions/submit-source-removal-in-batch"]({ session: sam.session, project, source, batch })).proposal;
+  const forA = await propose(a);
+  const forB = await propose(b);
+  const forC = await propose(c);
+
+  // Three separate pending proposals, each a REMOVE_SOURCE that names the batch; nothing removed yet.
+  const pending = await Contributing._pending({ target });
+  expect(pending).toHaveLength(3);
+  for (const row of pending) expect(JSON.parse(row.change)).toMatchObject({ operation: "REMOVE_SOURCE", batch });
+  expect(await DiscoveryLinking._source({ source: a })).toHaveLength(1);
+
+  // Sam cannot accept his own proposals.
+  expect(await api["/projects/contributions/accept"]({ session: sam.session, proposal: forA })).toEqual({ error: "FORBIDDEN" });
+
+  // Maya removes a and c, and keeps b.
+  ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: forA }));
+  ok(await api["/projects/contributions/reject"]({ session: maya.session, proposal: forB, reason: "Kept by the reviewer" }));
+  ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: forC }));
+
+  expect(await DiscoveryLinking._source({ source: a })).toEqual([]);
+  expect(await DiscoveryLinking._source({ source: b })).toHaveLength(1);
+  expect(await DiscoveryLinking._source({ source: c })).toEqual([]);
+  // The connection from a went with a.
+  expect(await DiscoveryLinking._connection({ connection })).toEqual([]);
+  expect((await Contributing._proposal({ proposal: forB }))[0]?.status).toBe("REJECTED");
+  expect(await Contributing._pending({ target })).toEqual([]);
+});
+
+test("a source outside the project cannot be proposed for removal in a batch", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking } = application.concepts;
+  const maya = await register("maya");
+  const sam = await register("sam");
+
+  const { project } = ok(await Collaborating.createProject({ owner: maya.user, name: "Roman History" }));
+  await application.whenIdle();
+  const [{ item: target }] = await Collaborating._getItem({ project });
+  const { source } = ok(await DiscoveryLinking.addSource({ graph: target, url: "https://example.com/a", contributor: maya.user }));
+
+  // Sam is not a member of Maya's project.
+  expect(await api["/projects/contributions/submit-source-removal-in-batch"]({ session: sam.session, project, source, batch: "b" })).toEqual({ error: "FORBIDDEN" });
+});
+
+describe("accepting a source removal whose source is already gone", () => {
+  /** Maya's project with sources a, b and c, a connection a → b, and a note on b. */
+  async function setUp() {
+    const grabbitHole = await startGrabbitHole();
+    const { application, register } = grabbitHole;
+    const { Collaborating, DiscoveryLinking } = application.concepts;
+    const maya = await register("maya");
+    const { project } = ok(await Collaborating.createProject({ owner: maya.user, name: "Roman History" }));
+    await application.whenIdle();
+    const [{ item: target }] = await Collaborating._getItem({ project });
+    const add = async (url: string) => ok(await DiscoveryLinking.addSource({ graph: target, url, contributor: maya.user })).source;
+    const a = await add("https://example.com/a");
+    const b = await add("https://example.com/b");
+    const c = await add("https://example.com/c");
+    const { connection } = ok(await DiscoveryLinking.addConnection({ graph: target, source: a, destination: b, contributor: maya.user }));
+    ok(await DiscoveryLinking.addNoteToSource({ source: b, author: maya.user, text: "Important" }));
+    return { ...grabbitHole, maya, project, target, a, b, c, connection };
+  }
+
+  test("a duplicate removal is refused, stays pending, and can be rejected", async () => {
+    const { application, api, maya, project, target, b } = await setUp();
+    const { Contributing, DiscoveryLinking } = application.concepts;
+    const removal = async () => ok(await api["/projects/contributions/submit-source-removal"]({ session: maya.session, project, source: b })).proposal;
+    const first = await removal();
+    const second = await removal();
+
+    ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: first }));
+    expect(await DiscoveryLinking._source({ source: b })).toEqual([]);
+
+    // The second one answers at once, and changes nothing.
+    expect(await api["/projects/contributions/accept"]({ session: maya.session, proposal: second })).toEqual({ error: "SOURCE_NOT_IN_GRAPH" });
+    expect((await Contributing._proposal({ proposal: second }))[0]?.status).toBe("PENDING");
+
+    // The reviewer rejects it, and nothing is left pending.
+    ok(await api["/projects/contributions/reject"]({ session: maya.session, proposal: second, reason: "Already removed" }));
+    expect((await Contributing._proposal({ proposal: second }))[0]?.status).toBe("REJECTED");
+    expect(await Contributing._pending({ target })).toEqual([]);
+  });
+
+  test("a removal accepted after its source was removed another way is refused", async () => {
+    const { application, api, maya, project, target, a, c } = await setUp();
+    const { Contributing, DiscoveryLinking } = application.concepts;
+    const { proposal } = ok(await api["/projects/contributions/submit-source-removal"]({ session: maya.session, project, source: a }));
+    ok(await DiscoveryLinking.removeSource({ graph: target, source: a }));
+
+    expect(await api["/projects/contributions/accept"]({ session: maya.session, proposal })).toEqual({ error: "SOURCE_NOT_IN_GRAPH" });
+    expect((await Contributing._proposal({ proposal }))[0]?.status).toBe("PENDING");
+    // The rest of the graph is untouched.
+    expect(await DiscoveryLinking._source({ source: c })).toHaveLength(1);
+  });
+
+  test("a non-reviewer still gets FORBIDDEN, not the missing-source refusal", async () => {
+    const { application, api, register, maya, project, a } = await setUp();
+    const { Collaborating, DiscoveryLinking } = application.concepts;
+    const sam = await register("sam");
+    const { invitation } = ok(await Collaborating.invite({ project, inviter: maya.user, invitee: sam.user }));
+    ok(await Collaborating.acceptInvitation({ invitation, user: sam.user }));
+    const { proposal } = ok(await api["/projects/contributions/submit-source-removal"]({ session: sam.session, project, source: a }));
+    const [{ item: target }] = await Collaborating._getItem({ project });
+    ok(await DiscoveryLinking.removeSource({ graph: target, source: a }));
+
+    expect(await api["/projects/contributions/accept"]({ session: sam.session, proposal })).toEqual({ error: "FORBIDDEN" });
+  });
+
+  test("a batch with an unavailable source: the others are still decided one by one", async () => {
+    const { application, api, maya, project, target, a, b, c, connection } = await setUp();
+    const { Contributing, DiscoveryLinking } = application.concepts;
+    const batch = "batch-1";
+    const propose = async (source: typeof a) =>
+      ok(await api["/projects/contributions/submit-source-removal-in-batch"]({ session: maya.session, project, source, batch })).proposal;
+    const forA = await propose(a);
+    const forB = await propose(b);
+    const forC = await propose(c);
+
+    // b goes first through a separate removal.
+    const { proposal: single } = ok(await api["/projects/contributions/submit-source-removal"]({ session: maya.session, project, source: b }));
+    ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: single }));
+
+    // The reviewer accepts a, is refused for b, rejects b, and accepts c.
+    ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: forA }));
+    expect(await api["/projects/contributions/accept"]({ session: maya.session, proposal: forB })).toEqual({ error: "SOURCE_NOT_IN_GRAPH" });
+    ok(await api["/projects/contributions/reject"]({ session: maya.session, proposal: forB, reason: "Already removed" }));
+    ok(await api["/projects/contributions/accept"]({ session: maya.session, proposal: forC }));
+
+    expect(await DiscoveryLinking._source({ source: a })).toEqual([]);
+    expect(await DiscoveryLinking._source({ source: c })).toEqual([]);
+    expect(await DiscoveryLinking._connection({ connection })).toEqual([]);
+    expect((await Contributing._proposal({ proposal: forA }))[0]?.status).toBe("ACCEPTED");
+    expect((await Contributing._proposal({ proposal: forB }))[0]?.status).toBe("REJECTED");
+    expect((await Contributing._proposal({ proposal: forC }))[0]?.status).toBe("ACCEPTED");
+    expect(await Contributing._pending({ target })).toEqual([]);
+  });
+});

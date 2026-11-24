@@ -30,14 +30,23 @@ export function openSource(url: string): boolean {
 }
 
 /** Copies the source's complete address to the clipboard. Resolves to whether it was copied. */
-export async function copySourceUrl(url: string): Promise<boolean> {
+export function copySourceUrl(url: string): Promise<boolean> {
+  return copyText(url);
+}
+
+/** Copies several sources' complete addresses, one per line. Resolves to whether they were copied. */
+export function copySourceUrls(urls: string[]): Promise<boolean> {
+  return copyText(urls.join("\n"));
+}
+
+async function copyText(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(text);
     return true;
   } catch {
     // The clipboard API is missing outside a secure context (such as http on a LAN address) and
     // can be refused; the older way still works in those cases.
-    return copyTheOldWay(url);
+    return copyTheOldWay(text);
   }
 }
 

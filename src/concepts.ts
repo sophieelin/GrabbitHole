@@ -337,6 +337,24 @@ makeAddConnectionNoteChange: ({
 
 
 
+/**
+ * A REMOVE_SOURCE change that also names the batch it was proposed in, so reviewers can see the
+ * removals proposed together as one group. Accepting reads only the operation and the source, so
+ * each removal in a batch is still accepted or rejected on its own.
+ */
+makeBatchedRemoveSourceChange: ({
+  source,
+  batch,
+}: {
+  source: string;
+  batch: string;
+}): string =>
+  JSON.stringify({
+    operation: "REMOVE_SOURCE",
+    source,
+    batch,
+  }),
+
 makeRemoveNoteChange: ({
   note,
 }: {

@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import type { GroupId, GroupStyle } from "../graph/types.ts";
 import Dialog from "../reusable/ui/Dialog.vue";
 
-/** The project's topic groups: add one, rename one, or remove one (its sources become ungrouped). */
-defineProps<{ name: string; groups: GroupStyle[]; busy: boolean; refusal: string }>();
+/**
+ * The project's topic groups: add one, rename one, or remove one (its sources become ungrouped).
+ * Opened from the selection toolbar's "Create new group…", `assigning` is how many selected
+ * sources the new group will take, and the name box starts focused.
+ */
+const props = defineProps<{ name: string; groups: GroupStyle[]; busy: boolean; refusal: string; assigning?: number }>();
 const emit = defineEmits<{ close: []; create: [name: string]; rename: [group: GroupId, name: string]; remove: [group: GroupId] }>();
 
 const fresh = ref("");
+const freshInput = ref<HTMLInputElement | null>(null);
+onMounted(() => {
+  if (props.assigning) freshInput.value?.focus();
+});
 function create() {
   if (fresh.value.trim() === "") return;
   emit("create", fresh.value.trim());
@@ -33,12 +41,15 @@ function rename(group: GroupStyle, event: Event) {
           <button type="button" class="text-button" :disabled="busy" @click="emit('remove', group.group)">Remove</button>
         </li>
       </ul>
+      <p v-if="assigning" class="quiet">
+        The new group will hold the {{ assigning }} selected {{ assigning === 1 ? "source" : "sources" }}.
+      </p>
       <form class="add" @submit.prevent="create">
         <label class="field">
           New group
-          <input v-model="fresh" type="text" maxlength="40" autocomplete="off" placeholder="A topic, like Chemistry" />
+          <input ref="freshInput" v-model="fresh" type="text" maxlength="40" autocomplete="off" placeholder="A topic, like Chemistry" />
         </label>
-        <button type="submit" class="button primary" :disabled="busy || fresh.trim() === ''">Add group</button>
+        <button type="submit" class="button primary" :disabled="busy || fresh.trim() === ''">{{ assigning ? "Create and assign" : "Add group" }}</button>
       </form>
       <p v-if="refusal" class="refusal" role="alert">{{ refusal }}</p>
     </div>

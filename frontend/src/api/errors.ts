@@ -6,6 +6,7 @@ const reviewersOnly = "Only a reviewer of this project can accept or reject prop
 const membersOnly = "Only members of this project can propose changes to it.";
 
 const ownerOnly = "Only the project's owner can do that.";
+const alreadyReviewed = "This proposal has already been reviewed.";
 
 const groupErrors = {
   INVALID_REQUEST: "A group needs a name.",
@@ -36,11 +37,20 @@ const messages: Record<string, Record<string, string>> = {
     FORBIDDEN: "Only members of this project can see its research graph.",
     NOT_FOUND: "That project doesn't exist.",
   },
-  "/projects/contributions/submit-source-note": { FORBIDDEN: membersOnly, INVALID_REQUEST: "Write a note first." },
-  "/projects/contributions/submit-source-removal": { FORBIDDEN: membersOnly },
-  "/projects/contributions/submit-note-removal": { FORBIDDEN: membersOnly },
-  "/projects/contributions/accept": { FORBIDDEN: reviewersOnly, INVALID_REQUEST: "That proposal was already decided." },
-  "/projects/contributions/reject": { FORBIDDEN: reviewersOnly, INVALID_REQUEST: "That proposal was already decided." },
+  "/projects/contributions/submit-source-note": {
+    FORBIDDEN: membersOnly,
+    INVALID_REQUEST: "Write a note first.",
+    NOT_FOUND: "That source is no longer in the graph.",
+  },
+  "/projects/contributions/submit-source-removal": { FORBIDDEN: membersOnly, NOT_FOUND: "That source is no longer in the graph." },
+  "/projects/contributions/submit-note-removal": { FORBIDDEN: membersOnly, NOT_FOUND: "That note is no longer in the graph." },
+  "/projects/contributions/accept": {
+    FORBIDDEN: reviewersOnly,
+    CONFLICT: alreadyReviewed,
+    NOT_FOUND: "What this proposal changes is no longer in the graph. Reject the proposal instead.",
+  },
+  "/projects/contributions/submit-source-removal-in-batch": { FORBIDDEN: membersOnly, NOT_FOUND: "That source is no longer in the graph." },
+  "/projects/contributions/reject": { FORBIDDEN: reviewersOnly, CONFLICT: alreadyReviewed, NOT_FOUND: "That proposal no longer exists." },
 };
 
 /** The sentence to show when the endpoint at `path` returns `error`. */

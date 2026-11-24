@@ -112,6 +112,15 @@ const SubmitNoteEdit = endpoint(
           .then(respond({ proposal }))
           .named("allowed"),
 
+        // The note is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._note({ note }).is({ graph: target })),
+        )
+          .then(respond({ error: "NOTE_NOT_FOUND" }))
+          .named("notInGraph"),
+
         where(
           Collaborating._canView({ project, user }).is({
             allowed: false,
@@ -155,6 +164,15 @@ const SubmitSourceNote = endpoint(
           )
           .then(respond({ proposal }))
           .named("allowed"),
+
+        // The source is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("notInGraph"),
 
         where(
           Collaborating._canView({ project, user }).is({
@@ -200,6 +218,15 @@ const SubmitSourceRemoval = endpoint(
           .then(respond({ proposal }))
           .named("allowed"),
 
+        // The source is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("notInGraph"),
+
         where(
           Collaborating._canView({ project, user }).is({
             allowed: false,
@@ -211,6 +238,63 @@ const SubmitSourceRemoval = endpoint(
   { validators: { input: textInput } },
 );
 
+
+/**
+ * Propose removing one source as part of a batch: the same checks and the same REMOVE_SOURCE
+ * proposal as SubmitSourceRemoval, with the batch recorded in the change. The frontend proposes
+ * each selected source with one shared batch, and reviewers decide each removal on its own.
+ */
+const SubmitBatchedSourceRemoval = endpoint(
+  "/projects/contributions/submit-source-removal-in-batch",
+  ({ session, project, source, batch, user, target, change, proposal }) =>
+    receive({ session, project, source, batch })
+      .then(SignIn.use({ session }).responds({ subject: user }))
+      .then(
+        where(
+          Collaborating._canView({ project, user }).is({
+            allowed: true,
+          }),
+          Collaborating._getItem({ project }).is({
+            item: target,
+          }),
+          DiscoveryLinking._source({ source }).is({
+            graph: target,
+          }),
+          compute(
+            computations.makeBatchedRemoveSourceChange,
+            { source, batch },
+            change,
+          ),
+        )
+          .then(
+            Contributing.propose({
+              user,
+              target,
+              change,
+            }).responds({ proposal }),
+          )
+          .then(respond({ proposal }))
+          .named("allowed"),
+
+        // The source is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("notInGraph"),
+
+        where(
+          Collaborating._canView({ project, user }).is({
+            allowed: false,
+          }),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("denied"),
+      ),
+  { validators: { input: textInput } },
+);
 
 const SubmitConnection = endpoint(
   "/projects/contributions/submit-connection",
@@ -249,6 +333,25 @@ const SubmitConnection = endpoint(
           )
           .then(respond({ proposal }))
           .named("allowed"),
+
+        // The source is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("sourceNotInGraph"),
+
+        // The source is, but the destination is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          DiscoveryLinking._source({ source }).is({ graph: target }),
+          no(DiscoveryLinking._source({ source: destination }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("destinationNotInGraph"),
 
         where(
           Collaborating._canView({ project, user }).is({
@@ -294,6 +397,15 @@ const SubmitConnectionRemoval = endpoint(
           .then(respond({ proposal }))
           .named("allowed"),
 
+        // The connection is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._connection({ connection }).is({ graph: target })),
+        )
+          .then(respond({ error: "CONNECTION_NOT_IN_GRAPH" }))
+          .named("notInGraph"),
+
         where(
           Collaborating._canView({ project, user }).is({
             allowed: false,
@@ -338,6 +450,15 @@ const SubmitConnectionNote = endpoint(
           .then(respond({ proposal }))
           .named("allowed"),
 
+        // The connection is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._connection({ connection }).is({ graph: target })),
+        )
+          .then(respond({ error: "CONNECTION_NOT_IN_GRAPH" }))
+          .named("notInGraph"),
+
         where(
           Collaborating._canView({ project, user }).is({
             allowed: false,
@@ -381,6 +502,15 @@ const SubmitNoteRemoval = endpoint(
           )
           .then(respond({ proposal }))
           .named("allowed"),
+
+        // The note is not in the project's graph. It is refused, so the request always gets an answer.
+        where(
+          Collaborating._canView({ project, user }).is({ allowed: true }),
+          Collaborating._getItem({ project }).is({ item: target }),
+          no(DiscoveryLinking._note({ note }).is({ graph: target })),
+        )
+          .then(respond({ error: "NOTE_NOT_FOUND" }))
+          .named("notInGraph"),
 
         where(
           Collaborating._canView({ project, user }).is({
@@ -481,6 +611,18 @@ const Accept = endpoint(
           .then(respond({}))
           .named("approvedNoteEdit"),
 
+        // EDIT_NOTE whose note is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "EDIT_NOTE", note }),
+          no(DiscoveryLinking._note({ note }).is({ graph: target })),
+        )
+          .then(respond({ error: "NOTE_NOT_FOUND" }))
+          .named("noteEditGone"),
+
         
         // Approve REMOVE_SOURCE.
         where(
@@ -521,6 +663,36 @@ const Accept = endpoint(
           )
           .then(respond({}))
           .named("approvedSourceRemoval"),
+
+        // REMOVE_SOURCE whose source is no longer in the graph (removed by an earlier proposal,
+        // say): there is nothing to remove, so the request is refused and the proposal stays
+        // pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({
+            target,
+            change,
+            status: "PENDING",
+          }),
+          Collaborating._getProjectByItem({
+            item: target,
+          }).is({ project }),
+          Collaborating._canReview({ project, user }).is({
+            allowed: true,
+          }),
+          compute(
+            computations.decodeChange,
+            { change },
+            {
+              operation: "REMOVE_SOURCE",
+              source,
+            },
+          ),
+          no(DiscoveryLinking._source({ source }).is({
+            graph: target,
+          })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("sourceRemovalGone"),
 
 
         // Approve ADD_CONNECTION.
@@ -572,6 +744,31 @@ const Accept = endpoint(
           .then(respond({}))
           .named("approvedConnection"),
 
+        // ADD_CONNECTION whose source is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "ADD_CONNECTION", source, destination }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("connectionSourceGone"),
+
+        // ADD_CONNECTION whose destination is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "ADD_CONNECTION", source, destination }),
+          DiscoveryLinking._source({ source }).is({ graph: target }),
+          no(DiscoveryLinking._source({ source: destination }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("connectionDestinationGone"),
+
         
         // Approve REMOVE_CONNECTION.
         where(
@@ -612,6 +809,18 @@ const Accept = endpoint(
           )
           .then(respond({}))
           .named("approvedConnectionRemoval"),
+
+        // REMOVE_CONNECTION whose connection is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "REMOVE_CONNECTION", connection }),
+          no(DiscoveryLinking._connection({ connection }).is({ graph: target })),
+        )
+          .then(respond({ error: "CONNECTION_NOT_IN_GRAPH" }))
+          .named("connectionRemovalGone"),
 
         
         // Approve ADD_SOURCE_NOTE.
@@ -656,6 +865,18 @@ const Accept = endpoint(
           )
           .then(respond({}))
           .named("approvedSourceNote"),
+
+        // ADD_SOURCE_NOTE whose source is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "ADD_SOURCE_NOTE", source }),
+          no(DiscoveryLinking._source({ source }).is({ graph: target })),
+        )
+          .then(respond({ error: "SOURCE_NOT_IN_GRAPH" }))
+          .named("sourceNoteGone"),
 
           
         
@@ -702,6 +923,18 @@ const Accept = endpoint(
           .then(respond({}))
           .named("approvedConnectionNote"),
 
+        // ADD_CONNECTION_NOTE whose connection is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "ADD_CONNECTION_NOTE", connection }),
+          no(DiscoveryLinking._connection({ connection }).is({ graph: target })),
+        )
+          .then(respond({ error: "CONNECTION_NOT_IN_GRAPH" }))
+          .named("connectionNoteGone"),
+
 
         // Approve REMOVE_NOTE.
         where(
@@ -741,6 +974,18 @@ const Accept = endpoint(
           )
           .then(respond({}))
           .named("approvedNoteRemoval"),
+
+        // REMOVE_NOTE whose note is no longer in the graph (an earlier proposal took it, say):
+        // nothing to apply, so the request is refused and the proposal stays pending for a reviewer to reject.
+        where(
+          Contributing._proposal({ proposal }).is({ target, change, status: "PENDING" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+          compute(computations.decodeChange, { change }, { operation: "REMOVE_NOTE", note }),
+          no(DiscoveryLinking._note({ note }).is({ graph: target })),
+        )
+          .then(respond({ error: "NOTE_NOT_FOUND" }))
+          .named("noteRemovalGone"),
 
 
         // Unauthorized reviewer.
@@ -787,6 +1032,20 @@ const Accept = endpoint(
         )
           .then(respond({ error: "PROPOSAL_NOT_PENDING" }))
           .named("alreadyRejected"),
+
+        // A withdrawn proposal can no longer be decided.
+        where(
+          Contributing._proposal({ proposal }).is({ target, status: "WITHDRAWN" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+        )
+          .then(respond({ error: "PROPOSAL_NOT_PENDING" }))
+          .named("alreadyWithdrawn"),
+
+        // There is no such proposal.
+        where(no(Contributing._proposal({ proposal })))
+          .then(respond({ error: "PROPOSAL_NOT_FOUND" }))
+          .named("unknownProposal"),
       ),
   { validators: { input: textInput } },
 );
@@ -865,6 +1124,20 @@ const Reject = endpoint(
         )
           .then(respond({ error: "PROPOSAL_NOT_PENDING" }))
           .named("alreadyAccepted"),
+
+        // A withdrawn proposal can no longer be decided.
+        where(
+          Contributing._proposal({ proposal }).is({ target, status: "WITHDRAWN" }),
+          Collaborating._getProjectByItem({ item: target }).is({ project }),
+          Collaborating._canReview({ project, user }).is({ allowed: true }),
+        )
+          .then(respond({ error: "PROPOSAL_NOT_PENDING" }))
+          .named("alreadyWithdrawn"),
+
+        // There is no such proposal.
+        where(no(Contributing._proposal({ proposal })))
+          .then(respond({ error: "PROPOSAL_NOT_FOUND" }))
+          .named("unknownProposal"),
       ),
   { validators: { input: textInput } },
 );
@@ -875,6 +1148,7 @@ export const composition = {
   SubmitGraph,
   SubmitNoteEdit,
   SubmitSourceRemoval,
+  SubmitBatchedSourceRemoval,
   SubmitConnection,
     SubmitConnectionRemoval,
     SubmitSourceNote,

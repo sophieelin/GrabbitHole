@@ -128,19 +128,19 @@ export type GrabbitHoleWire = {
   };
   "/projects/contributions/submit-connection": {
     input: {
-      "destination": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["destination"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "destination": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/contributions/submit-connection-note": {
     input: {
-      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "connection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["text"]>>;
@@ -148,22 +148,22 @@ export type GrabbitHoleWire = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "CONNECTION_NOT_IN_GRAPH" | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
   "/projects/contributions/submit-connection-removal": {
     input: {
-      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveConnectionChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "connection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "CONNECTION_NOT_IN_GRAPH" | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
   };
   "/projects/contributions/submit-note-edit": {
     input: {
-      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "note": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["text"]>>;
@@ -171,41 +171,53 @@ export type GrabbitHoleWire = {
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOTE_NOT_FOUND" | "NOT_SIGNED_IN" };
   };
   "/projects/contributions/submit-note-removal": {
     input: {
-      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "note": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOTE_NOT_FOUND" | "NOT_SIGNED_IN" };
   };
   "/projects/contributions/submit-source-note": {
     input: {
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["text"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/contributions/submit-source-removal": {
     input: {
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveSourceChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SOURCE_NOT_IN_GRAPH" };
+  };
+  "/projects/contributions/submit-source-removal-in-batch": {
+    input: {
+      "batch": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeBatchedRemoveSourceChange"]["fn"]>[0], ["batch"]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: AppWideError | "FORBIDDEN" | "INVALID_INPUT" | "NOT_SIGNED_IN" | "SOURCE_NOT_IN_GRAPH" };
   };
   "/projects/create": {
     input: {
@@ -546,7 +558,7 @@ export type GrabbitHoleWireHttp = {
       "reason": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Contributing"]["reject"]>[0], ["reason"]>>;
     };
     output: Record<string, never>;
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit": {
     input: {
@@ -560,77 +572,88 @@ export type GrabbitHoleWireHttp = {
   };
   "/projects/contributions/submit-connection": {
     input: {
-      "destination": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["destination"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "destination": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection-note": {
     input: {
-      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "connection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddConnectionNoteChange"]["fn"]>[0], ["text"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-connection-removal": {
     input: {
-      "connection": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveConnectionChange"]["fn"]>[0], ["connection"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>]>>;
+      "connection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_connection"]>[0], ["connection"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-note-edit": {
     input: {
-      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "note": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeEditNoteChange"]["fn"]>[0], ["text"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-note-removal": {
     input: {
-      "note": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveNoteChange"]["fn"]>[0], ["note"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>]>>;
+      "note": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_note"]>[0], ["note"]>>;
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-source-note": {
     input: {
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
       "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeAddSourceNoteChange"]["fn"]>[0], ["text"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/contributions/submit-source-removal": {
     input: {
       "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
-      "source": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeRemoveSourceChange"]["fn"]>[0], ["source"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
     };
     output: {
       "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
     };
-    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/projects/contributions/submit-source-removal-in-batch": {
+    input: {
+      "batch": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.computations)["makeBatchedRemoveSourceChange"]["fn"]>[0], ["batch"]>>;
+      "project": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collaborating"]["_canView"]>[0], ["project"]>>;
+      "source": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["DiscoveryLinking"]["_source"]>[0], ["source"]>>;
+    };
+    output: {
+      "proposal": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Contributing"]["propose"]>>, ["proposal"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/projects/create": {
     input: {

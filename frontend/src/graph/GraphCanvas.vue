@@ -20,8 +20,12 @@ import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
  *
  * Double-clicking a source, or choosing "Show in path view" or "Show in group view" from the menu
  * that right-clicking it opens, asks to see it in the other view. The same menu opens the source's
- * page in a new tab or copies its address. When the view changes, the
+ * page in a new tab, copies its address, or proposes removing it. When the view changes, the
  * selected source is brought to the middle and briefly pulses, so it is easy to find.
+ *
+ * In selection mode, clicking a source picks it or puts it back instead of selecting it, so
+ * several can be acted on together. Double-clicking and the menu are off then, and every source
+ * shows a round mark that fills in when it is picked.
  */
 const props = defineProps<{
   graph: ResearchGraph;
@@ -36,8 +40,19 @@ const props = defineProps<{
    * to right from where a session started, and draws every link.
    */
   mode: "group" | "path";
+  /** Whether clicking a source picks it for a bulk action instead of selecting it. */
+  selecting: boolean;
+  /** The sources picked in selection mode. */
+  picked: Set<SourceId>;
 }>();
-const emit = defineEmits<{ select: [source: SourceId | null]; switch: [source: SourceId] }>();
+const emit = defineEmits<{
+  select: [source: SourceId | null];
+  switch: [source: SourceId];
+  /** Pick a source, or put it back, in selection mode. */
+  toggle: [source: SourceId];
+  /** Ask, from the menu, to propose removing a source. */
+  proposeRemoval: [source: SourceId];
+}>();
 
 const INK = "#1e2833";
 const GREY = "#8f8a7f";
@@ -338,6 +353,12 @@ const arrived = ref<SourceId | null>(null);
 let arrivedTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** After the view changes, brings the selected source to the middle and makes it pulse. */
+function keepArrivedCentered() {
+  const box = viewport.value?.getBoundingClientRect();
+  const pill = arrived.value === null ? undefined : pillFor(arrived.value);
+  if (box && pill) center(pill, box);
+}
+
 function arrive() {
   const box = viewport.value?.getBoundingClientRect();
   const pill = pillFor(props.selected);
@@ -390,16 +411,19 @@ const MENU_GRACE_MS = 600;
 
 function onPillClick(event: MouseEvent, source: SourceId) {
   if (event.button !== 0 || event.ctrlKey) return;
-  emit("select", source);
+  if (props.selecting) emit("toggle", source);
+  else emit("select", source);
 }
 
 function onPillDoubleClick(event: MouseEvent, source: SourceId) {
-  if (event.button !== 0 || event.ctrlKey) return;
+  if (event.button !== 0 || event.ctrlKey || props.selecting) return;
   if (menu.value !== null || performance.now() - menuAskedAt < MENU_GRACE_MS) return;
   emit("switch", source);
 }
 
 async function openMenu(event: MouseEvent, { source, url }: Source) {
+  // In selection mode the menu is off; the selection toolbar holds the actions.
+  if (props.selecting) return;
   menuAskedAt = performance.now();
   pressedItem = null;
   const box = viewport.value?.getBoundingClientRect();
@@ -469,14 +493,17 @@ function onMenuPointerDown(event: PointerEvent) {
 }
 
 /** Runs one of the menu's items, then the menu is closed by the action itself. */
-function choose(event: MouseEvent, action: "switch" | "open" | "copy") {
+function choose(event: MouseEvent, action: "switch" | "open" | "copy" | "remove") {
   const chosen = menu.value;
   if (chosen === null) return;
   if (event.detail > 0 && pressedItem !== event.currentTarget) return;
   pressedItem = null;
   if (action === "switch") showInOtherView(chosen.source);
   else if (action === "open") openFromMenu(chosen.url);
-  else void copyFromMenu(chosen.url);
+  else if (action === "remove") {
+    closeMenu();
+    emit("proposeRemoval", chosen.source);
+  } else void copyFromMenu(chosen.url);
 }
 
 /** Asks to see a source in the other view. */
@@ -560,7 +587,12 @@ const observer = new ResizeObserver(() => {
     sized = true;
     room.value = { width: box.clientWidth - 64, height: box.clientHeight - 96 };
   }
-  requestAnimationFrame(fit);
+  requestAnimationFrame(() => {
+    fit();
+    // A source that just arrived from the other view stays in the middle when the source panel
+    // opens with it and narrows the drawing.
+    keepArrivedCentered();
+  });
 });
 onMounted(() => viewport.value && observer.observe(viewport.value));
 onBeforeUnmount(() => {
@@ -582,6 +614,7 @@ watch(
   { flush: "post" },
 );
 watch(() => props.selected, reveal, { flush: "post" });
+watch(() => props.selecting, closeMenu);
 
 defineExpose({ fit, zoom });
 </script>
@@ -590,7 +623,7 @@ defineExpose({ fit, zoom });
   <div
     ref="viewport"
     class="viewport"
-    :class="{ dragging }"
+    :class="{ dragging, selecting }"
     @wheel.prevent="onWheel"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
@@ -637,6 +670,7 @@ defineExpose({ fit, zoom });
             selected: pill.source.source === selected,
             arrived: pill.source.source === arrived,
             targeted: pill.source.source === menu?.source,
+            picked: selecting && picked.has(pill.source.source),
             faded: selected !== null && !near.has(pill.source.source),
           }"
           :style="{
@@ -646,12 +680,15 @@ defineExpose({ fit, zoom });
             height: `${PILL_HEIGHT}px`,
             background: pill.start ? undefined : (pill.color ?? undefined),
           }"
-          :aria-pressed="pill.source.source === selected"
+          :aria-pressed="selecting ? picked.has(pill.source.source) : pill.source.source === selected"
           :title="pill.source.url"
           @click="onPillClick($event, pill.source.source)"
           @dblclick="onPillDoubleClick($event, pill.source.source)"
           @contextmenu.prevent="openMenu($event, pill.source)"
         >
+          <span v-if="selecting" class="tick" :class="{ on: picked.has(pill.source.source) }" aria-hidden="true">
+            <Icon v-if="picked.has(pill.source.source)" name="check" :size="12" />
+          </span>
           <span v-if="pill.source.notes.length" class="noted" aria-label="Has a note"></span>{{ pill.name }}
         </button>
       </template>
@@ -672,6 +709,8 @@ defineExpose({ fit, zoom });
         <Icon name="external" :size="16" />Open original website
       </button>
       <button type="button" role="menuitem" @click="choose($event, 'copy')"><Icon name="copy" :size="16" />Copy source URL</button>
+      <hr role="separator" />
+      <button type="button" role="menuitem" class="danger" @click="choose($event, 'remove')"><Icon name="trash" :size="16" />Propose removal</button>
     </div>
     <p class="copy-status" :class="{ shown: copyStatus, failed: copyStatus && !copyStatus.copied }" role="status">
       <template v-if="copyStatus?.copied"><Icon name="check" :size="15" />URL copied</template>
@@ -781,6 +820,43 @@ defineExpose({ fit, zoom });
 .pill.faded {
   opacity: 0.18;
 }
+/* Selection mode: a thin rust frame around the drawing says clicks now pick sources. */
+.viewport.selecting {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+  cursor: default;
+}
+/*
+ * The round mark on every source in selection mode, on the pill's top left corner so it never
+ * covers the name; it fills in rust with a check when the source is picked.
+ */
+.tick {
+  position: absolute;
+  top: -7px;
+  left: -5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--color-text-muted);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(30, 40, 51, 0.18);
+}
+.tick.on {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+  opacity: 1;
+}
+/*
+ * A picked source: a thin rust outline right at its edge, with the check mark on its corner. An
+ * outline takes no room, so the pill keeps its size, its place, and its own border and shadow.
+ */
+.pill.picked {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
 /* The source the open menu is about, which need not be the selected one. */
 .pill.targeted {
   opacity: 1;
@@ -849,6 +925,14 @@ defineExpose({ fit, zoom });
 .context-menu button:focus-visible {
   background: var(--color-page);
   outline: none;
+}
+.context-menu button.danger,
+.context-menu button.danger svg {
+  color: var(--color-danger);
+}
+.context-menu button.danger:hover,
+.context-menu button.danger:focus-visible {
+  background: var(--color-danger-soft);
 }
 .context-menu button:disabled {
   opacity: 0.5;

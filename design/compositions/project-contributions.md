@@ -118,6 +118,18 @@ The source remains unchanged while the proposal is pending. When an authorized r
 projectContributions.SubmitSourceRemoval at /projects/contributions/submit-source-removal
 ```
 
+## Proposing source removals together
+
+A member can select several sources and propose removing them together, while reviewers still decide each removal on its own.
+
+The [SubmitBatchedSourceRemoval endpoint](reaction:projectContributions.SubmitBatchedSourceRemoval) makes the same checks as SubmitSourceRemoval: it identifies the researcher through `SignIn.use`, verifies membership through `Collaborating._canView`, retrieves the main graph through `Collaborating._getItem`, and verifies through `DiscoveryLinking._source` that the source belongs to it. It also receives a batch identity, chosen by the frontend and shared by every source proposed together.
+
+The application constructs a `REMOVE_SOURCE` change containing the source's identity and the batch, and calls `Contributing.propose` with the main graph as the target. Each source is its own proposal, so a reviewer can accept some removals in a batch and reject others; accepting reads only the operation and the source, exactly as for a single removal. The batch only lets the review list show the proposals together. Contributing itself is unchanged: the change is opaque to it.
+
+```endpoints
+projectContributions.SubmitBatchedSourceRemoval at /projects/contributions/submit-source-removal-in-batch
+```
+
 ## Proposing note edits
 
 Project members can propose edits to notes in their project's main research graph.
@@ -142,6 +154,16 @@ When a reviewer requests approval, the application identifies the user through `
 Only users for whom `Collaborating._canReview` returns true may accept or reject proposals. Accepted changes are applied using the corresponding DiscoveryLinking action.
 
 The [Accept endpoint](reaction:projectContributions.Accept) identifies the signed-in reviewer, retrieves the pending proposal, and finds the project associated with its target graph. It checks `Collaborating._canReview` before allowing approval. For a `MERGE_GRAPH` proposal, the application applies the change through `DiscoveryLinking.mergeGraph` and records the decision through `Contributing.accept`.
+
+### When a proposal's target is gone
+
+Every request gets an answer. A proposal names a source, connection or note that may be gone by the time it is submitted or reviewed: two proposals may remove the same thing, or accepting one proposal may remove what another depends on (removing a source also removes its connections and their notes).
+
+- **Submitting.** Each submit endpoint checks its target against the project's main graph. A member naming a source, connection or note that is not in it is refused with `SOURCE_NOT_IN_GRAPH`, `CONNECTION_NOT_IN_GRAPH` or `NOTE_NOT_FOUND`; a connection is refused if either of its sources is missing. A non-member is refused with `FORBIDDEN` as before.
+- **Accepting.** For each operation, a reviewer accepting a pending proposal whose target is no longer in the graph is refused with the same codes: `REMOVE_SOURCE` and `ADD_SOURCE_NOTE` with `SOURCE_NOT_IN_GRAPH`, `ADD_CONNECTION` (either source gone) with `SOURCE_NOT_IN_GRAPH`, `REMOVE_CONNECTION` and `ADD_CONNECTION_NOTE` with `CONNECTION_NOT_IN_GRAPH`, and `EDIT_NOTE` and `REMOVE_NOTE` with `NOTE_NOT_FOUND`. An `ADD_CONNECTION` whose connection already exists is refused by `DiscoveryLinking.addConnection` with `CONNECTION_EXISTS`. Nothing is applied and the proposal stays `PENDING`, so the reviewer rejects it through the Reject endpoint; the proposal lifecycle is unchanged. Other proposals, including the other removals in a batch, are unaffected, since each is its own proposal.
+- **Deciding a proposal that cannot be decided.** Accepting or rejecting a proposal that was already accepted, rejected or withdrawn is refused with `PROPOSAL_NOT_PENDING`, and one that does not exist with `PROPOSAL_NOT_FOUND`.
+
+Over HTTP (`src/host/http.ts`), the "not in the graph" refusals and `PROPOSAL_NOT_FOUND` are 404 `NOT_FOUND`, and `PROPOSAL_NOT_PENDING` and `CONNECTION_EXISTS` are 409 `CONFLICT`.
 
 
 The [Reject endpoint](reaction:projectContributions.Reject) identifies the signed-in reviewer, retrieves the pending proposal, and checks reviewer permissions through Collaborating. If authorized, it calls `Contributing.reject` with the reviewer's identity and reason. Rejection leaves the project's main graph unchanged.
@@ -169,6 +191,9 @@ decodeChange(change: String) : Record
 
 makeRemoveSourceChange(source: String) : String
   Serializes a REMOVE_SOURCE operation containing the source's identity.
+
+makeBatchedRemoveSourceChange(source: String, batch: String) : String
+  Serializes a REMOVE_SOURCE operation containing the source's identity and the batch it was proposed in.
 
 makeAddConnectionChange(source: String, destination: String, contributor: String) : String
   Serializes an ADD_CONNECTION operation containing the source, destination, and authenticated contributor identities.
