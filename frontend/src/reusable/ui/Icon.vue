@@ -17,6 +17,9 @@ const paths = {
   search: ["M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0", "m20 20-3.5-3.5"],
   describe: ["M4 6h16M4 12h16M4 18h10"],
   tag: ["M3 12V4h8l10 10-8 8z", "M7.5 8.5h.01"],
+  copy: ["M11 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z", "M5 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v0"],
+  external: ["M14 4h6v6", "M20 4 11 13", "M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"],
+  check: ["m5 12.5 4.5 4.5L19 7.5"],
 } as const;
 
 export type IconName = keyof typeof paths;

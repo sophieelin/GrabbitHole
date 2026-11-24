@@ -2,6 +2,8 @@
 import dagre from "@dagrejs/dagre";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { shortName } from "./labels.ts";
+import { copySourceUrl, openSource, webAddress } from "./sourceActions.ts";
+import Icon from "../reusable/ui/Icon.vue";
 import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
 
 /**
@@ -17,7 +19,8 @@ import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
  * researcher was on to the page they went to.
  *
  * Double-clicking a source, or choosing "Show in path view" or "Show in group view" from the menu
- * that right-clicking it opens, asks to see it in the other view. When the view changes, the
+ * that right-clicking it opens, asks to see it in the other view. The same menu opens the source's
+ * page in a new tab or copies its address. When the view changes, the
  * selected source is brought to the middle and briefly pulses, so it is easy to find.
  */
 const props = defineProps<{
@@ -346,27 +349,70 @@ function arrive() {
 }
 
 /*
- * The menu that right-clicking a source opens. Its one item shows the source in the other view.
- * It is placed in the frame's own coordinates, outside the zoomed stage, so it stays a normal size.
+ * The menu that right-clicking a source opens: show the source in the other view, then open its
+ * page or copy its address. It is placed in the frame's own coordinates, outside the zoomed stage,
+ * so it stays a normal size.
  */
-const menu = ref<{ source: SourceId; x: number; y: number } | null>(null);
+const menu = ref<{ source: SourceId; url: string; x: number; y: number } | null>(null);
 const menuElement = ref<HTMLElement | null>(null);
-const menuItem = ref<HTMLButtonElement | null>(null);
-/** The pill the menu was opened from, to give the focus back to when the menu is dismissed. */
+/**
+ * The pill the menu was opened from. When the menu was opened from the keyboard, the focus goes
+ * back to it when the menu is dismissed. After a right-click it does not, so no focus ring is left
+ * on a source the pointer only pointed at.
+ */
 let menuOpener: HTMLElement | null = null;
+let menuFromKeyboard = false;
+function giveFocusBack() {
+  if (menuFromKeyboard) menuOpener?.focus();
+}
+/**
+ * The item a press started on. A mouse choice counts only when the press started on that same item,
+ * so a release or a stray click carried over from opening the menu chooses nothing. Choosing from
+ * the keyboard (Enter or Space, which report no clicks) always counts.
+ */
+let pressedItem: Element | null = null;
+
 const otherView = computed(() => (props.mode === "group" ? "Show in path view" : "Show in group view"));
 
-async function openMenu(event: MouseEvent, source: SourceId) {
+/*
+ * Clicking, double-clicking and right-clicking a source do three different things, and must never
+ * run together:
+ * - a click selects the source;
+ * - a double-click shows it in the other view;
+ * - a right-click (also Control-click, or a two-finger click on a Mac trackpad) opens the menu.
+ *   It leaves the selection alone: the menu has its own target, which is outlined while it is open.
+ * Only the main button's own clicks count as a click or a double-click. A double-click that comes
+ * while the menu is open, or just after it was asked for, is part of opening the menu, not a
+ * request to switch.
+ */
+let menuAskedAt = -Infinity;
+const MENU_GRACE_MS = 600;
+
+function onPillClick(event: MouseEvent, source: SourceId) {
+  if (event.button !== 0 || event.ctrlKey) return;
+  emit("select", source);
+}
+
+function onPillDoubleClick(event: MouseEvent, source: SourceId) {
+  if (event.button !== 0 || event.ctrlKey) return;
+  if (menu.value !== null || performance.now() - menuAskedAt < MENU_GRACE_MS) return;
+  emit("switch", source);
+}
+
+async function openMenu(event: MouseEvent, { source, url }: Source) {
+  menuAskedAt = performance.now();
+  pressedItem = null;
   const box = viewport.value?.getBoundingClientRect();
   if (!box) return;
   menuOpener = event.currentTarget as HTMLElement;
-  emit("select", source);
   // From the keyboard (the menu key, or shift + F10) there is no pointer, so the menu opens under the pill.
   const fromKeyboard = event.clientX === 0 && event.clientY === 0;
+  menuFromKeyboard = fromKeyboard;
   const pillBox = menuOpener.getBoundingClientRect();
-  const x = (fromKeyboard ? pillBox.left : event.clientX) - box.left;
-  const y = (fromKeyboard ? pillBox.bottom + 4 : event.clientY) - box.top;
-  menu.value = { source, x, y };
+  // A few pixels off the pointer, so the release that ends the right-click cannot land on an item.
+  const x = (fromKeyboard ? pillBox.left : event.clientX + 4) - box.left;
+  const y = (fromKeyboard ? pillBox.bottom + 4 : event.clientY + 4) - box.top;
+  menu.value = { source, url, x, y };
   document.addEventListener("pointerdown", dismissIfOutside, true);
   document.addEventListener("keydown", escapeMenu);
   window.addEventListener("blur", closeMenu);
@@ -377,7 +423,28 @@ async function openMenu(event: MouseEvent, source: SourceId) {
     menu.value.x = Math.max(8, Math.min(menu.value.x, box.width - size.width - 8));
     menu.value.y = Math.max(8, Math.min(menu.value.y, box.height - size.height - 8));
   }
-  menuItem.value?.focus();
+  menuItems()[0]?.focus();
+}
+
+/** The menu's items that can be chosen, in order. */
+function menuItems(): HTMLButtonElement[] {
+  return [...(menuElement.value?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not(:disabled)") ?? [])];
+}
+
+/** The up and down arrows (and Home and End) move between the menu's items. */
+function moveInMenu(event: KeyboardEvent) {
+  const items = menuItems();
+  if (items.length === 0) return;
+  const at = items.indexOf(document.activeElement as HTMLButtonElement);
+  const next =
+    event.key === "ArrowDown" ? (at + 1) % items.length
+    : event.key === "ArrowUp" ? (at - 1 + items.length) % items.length
+    : event.key === "Home" ? 0
+    : event.key === "End" ? items.length - 1
+    : null;
+  if (next === null) return;
+  event.preventDefault();
+  items[next]!.focus();
 }
 
 function closeMenu() {
@@ -394,13 +461,47 @@ function dismissIfOutside(event: PointerEvent) {
 function escapeMenu(event: KeyboardEvent) {
   if (event.key !== "Escape") return;
   closeMenu();
-  menuOpener?.focus();
+  giveFocusBack();
+}
+
+function onMenuPointerDown(event: PointerEvent) {
+  pressedItem = (event.target as Element).closest("[role=menuitem]");
+}
+
+/** Runs one of the menu's items, then the menu is closed by the action itself. */
+function choose(event: MouseEvent, action: "switch" | "open" | "copy") {
+  const chosen = menu.value;
+  if (chosen === null) return;
+  if (event.detail > 0 && pressedItem !== event.currentTarget) return;
+  pressedItem = null;
+  if (action === "switch") showInOtherView(chosen.source);
+  else if (action === "open") openFromMenu(chosen.url);
+  else void copyFromMenu(chosen.url);
 }
 
 /** Asks to see a source in the other view. */
 function showInOtherView(source: SourceId) {
   closeMenu();
   emit("switch", source);
+}
+
+/** Opens the source's page in a new tab; the graph, its view, and the selection stay as they are. */
+function openFromMenu(url: string) {
+  closeMenu();
+  openSource(url);
+}
+
+/** A short line at the foot of the drawing saying whether the address was copied. */
+const copyStatus = ref<{ copied: boolean } | null>(null);
+let copyStatusTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function copyFromMenu(url: string) {
+  closeMenu();
+  giveFocusBack();
+  const copied = await copySourceUrl(url);
+  clearTimeout(copyStatusTimer);
+  copyStatus.value = { copied };
+  copyStatusTimer = setTimeout(() => (copyStatus.value = null), copied ? 1800 : 3500);
 }
 
 function zoom(factor: number, at?: { x: number; y: number }) {
@@ -466,6 +567,7 @@ onBeforeUnmount(() => {
   observer.disconnect();
   closeMenu();
   clearTimeout(arrivedTimer);
+  clearTimeout(copyStatusTimer);
 });
 watch(
   () => [layout.value.width, layout.value.height, props.mode] as const,
@@ -534,6 +636,7 @@ defineExpose({ fit, zoom });
             plain: !pill.start && pill.color === null,
             selected: pill.source.source === selected,
             arrived: pill.source.source === arrived,
+            targeted: pill.source.source === menu?.source,
             faded: selected !== null && !near.has(pill.source.source),
           }"
           :style="{
@@ -545,9 +648,9 @@ defineExpose({ fit, zoom });
           }"
           :aria-pressed="pill.source.source === selected"
           :title="pill.source.url"
-          @click="emit('select', pill.source.source)"
-          @dblclick="emit('switch', pill.source.source)"
-          @contextmenu.prevent="openMenu($event, pill.source.source)"
+          @click="onPillClick($event, pill.source.source)"
+          @dblclick="onPillDoubleClick($event, pill.source.source)"
+          @contextmenu.prevent="openMenu($event, pill.source)"
         >
           <span v-if="pill.source.notes.length" class="noted" aria-label="Has a note"></span>{{ pill.name }}
         </button>
@@ -560,9 +663,20 @@ defineExpose({ fit, zoom });
       role="menu"
       :style="{ left: `${menu.x}px`, top: `${menu.y}px` }"
       @contextmenu.prevent
+      @keydown="moveInMenu"
+      @pointerdown="onMenuPointerDown"
     >
-      <button ref="menuItem" type="button" role="menuitem" @click="showInOtherView(menu.source)">{{ otherView }}</button>
+      <button type="button" role="menuitem" @click="choose($event, 'switch')">{{ otherView }}</button>
+      <hr role="separator" />
+      <button type="button" role="menuitem" :disabled="webAddress(menu.url) === null" @click="choose($event, 'open')">
+        <Icon name="external" :size="16" />Open original website
+      </button>
+      <button type="button" role="menuitem" @click="choose($event, 'copy')"><Icon name="copy" :size="16" />Copy source URL</button>
     </div>
+    <p class="copy-status" :class="{ shown: copyStatus, failed: copyStatus && !copyStatus.copied }" role="status">
+      <template v-if="copyStatus?.copied"><Icon name="check" :size="15" />URL copied</template>
+      <template v-else-if="copyStatus">Couldn't copy the URL. Your browser may not allow it here.</template>
+    </p>
   </div>
 </template>
 
@@ -667,6 +781,16 @@ defineExpose({ fit, zoom });
 .pill.faded {
   opacity: 0.18;
 }
+/* The source the open menu is about, which need not be the selected one. */
+.pill.targeted {
+  opacity: 1;
+  outline: 2px dashed var(--color-text-muted);
+  outline-offset: 3px;
+}
+/* The selected source's own menu: the dashes go outside its solid ring, so both can be seen. */
+.pill.selected.targeted {
+  outline-offset: 9px;
+}
 /* A source that just arrived from the other view: a ring in the accent color spreads out from it twice. */
 .pill.arrived {
   animation: arrive 0.8s ease-out 2;
@@ -703,6 +827,9 @@ defineExpose({ fit, zoom });
   cursor: default;
 }
 .context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 9px 12px;
   border: 0;
   border-radius: 8px;
@@ -714,10 +841,54 @@ defineExpose({ fit, zoom });
   text-align: left;
   cursor: pointer;
 }
-.context-menu button:hover,
+.context-menu button svg {
+  flex: none;
+  color: var(--color-text-muted);
+}
+.context-menu button:hover:not(:disabled),
 .context-menu button:focus-visible {
   background: var(--color-page);
   outline: none;
+}
+.context-menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.context-menu hr {
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+/* "URL copied": a quiet note at the foot of the drawing that fades away. */
+.copy-status {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.copy-status.shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.copy-status.failed {
+  background: var(--color-danger);
 }
 .noted {
   flex: none;

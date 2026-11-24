@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { labelOf, titleOf } from "../graph/labels.ts";
+import { copySourceUrl, webAddress } from "../graph/sourceActions.ts";
+import Icon from "../reusable/ui/Icon.vue";
 import type { GroupId, GroupStyle, Note, ResearchGraph, Source, SourceId } from "../graph/types.ts";
 
 /**
@@ -45,6 +47,20 @@ function makeGroup() {
 }
 
 const label = computed(() => labelOf(props.source.url));
+/** The address to link to; null when the stored URL is not a web page, which is then shown but not linked. */
+const href = computed(() => webAddress(props.source.url));
+
+/** Copying the address: the copy icon turns into a check for a moment, or says the copy failed. */
+const copyResult = ref<"copied" | "failed" | null>(null);
+let copyTimer: ReturnType<typeof setTimeout> | undefined;
+async function copyUrl() {
+  const copied = await copySourceUrl(props.source.url);
+  clearTimeout(copyTimer);
+  copyResult.value = copied ? "copied" : "failed";
+  copyTimer = setTimeout(() => (copyResult.value = null), copied ? 1500 : 3000);
+}
+const copyLabel = computed(() => (copyResult.value === "copied" ? "Copied" : copyResult.value === "failed" ? "Couldn't copy" : "Copy URL"));
+onBeforeUnmount(() => clearTimeout(copyTimer));
 const urlOf = computed(() => new Map(props.graph.sources.map(({ source, url }) => [source, url])));
 
 function neighbours(end: "source" | "destination") {
@@ -62,6 +78,8 @@ watch(
   () => {
     draft.value = "";
     naming.value = false;
+    clearTimeout(copyTimer);
+    copyResult.value = null;
   },
 );
 function submitNote() {
@@ -78,7 +96,23 @@ function submitNote() {
       <button type="button" class="text-button close" @click="emit('close')">Close</button>
     </header>
     <h2>{{ label.page || label.site }}</h2>
-    <a class="url" :href="source.url" target="_blank" rel="noreferrer">{{ source.url }}</a>
+    <div class="address">
+      <a v-if="href" class="url" :href="href" target="_blank" rel="noopener noreferrer" :title="source.url">
+        <span class="url-text">{{ source.url }}</span>
+        <span class="open" title="Open website"><Icon name="external" :size="14" /><span class="visually-hidden">(opens in a new tab)</span></span>
+      </a>
+      <span v-else class="url" :title="source.url"><span class="url-text">{{ source.url }}</span></span>
+      <button
+        type="button"
+        class="icon-button copy"
+        :class="copyResult"
+        :title="copyLabel"
+        :aria-label="copyLabel"
+        @click="copyUrl"
+      >
+        <Icon :name="copyResult === 'copied' ? 'check' : 'copy'" :size="16" />
+      </button>
+    </div>
     <button type="button" class="button outline other" @click="emit('switchView')">
       {{ mode === "group" ? "See how we got here" : "See it in its group" }}
     </button>
@@ -177,11 +211,58 @@ h2 {
   font-size: var(--text-2xl);
   overflow-wrap: anywhere;
 }
+/* The address, up to two lines and then cut short, with the copy button beside it. */
+.address {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
 .url {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding-top: 7px;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+.url-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   overflow-wrap: anywhere;
+}
+a.url:hover .url-text {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+.open {
+  flex: none;
+  display: grid;
+  margin-top: 1px;
+}
+.copy {
+  width: 32px;
+  height: 32px;
+}
+.copy.copied {
+  color: var(--color-accepted);
+}
+.copy.failed {
+  color: var(--color-danger);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 section {
   display: flex;
