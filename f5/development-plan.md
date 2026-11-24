@@ -4,7 +4,7 @@
 
 ### Completed
 
-**Graph interactions (April)**
+**Node features (April)**
 
 - Added cross-view navigation: double-clicking a source, or choosing "Show in path view" / "Show in group view" from its right-click menu, switches views with the source selected, centered, and briefly highlighted. Click, double-click, and right-click (including Control-click and trackpad secondary clicks) never trigger one another, and right-clicking leaves the selection and source panel alone; a dashed outline marks the menu's source instead.
 - Added "Open original website" and "Copy source URL" to the right-click menu, and matching open and copy icons beside the URL in the source panel. Only `http` and `https` addresses are opened.

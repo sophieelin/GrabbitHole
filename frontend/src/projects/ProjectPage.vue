@@ -218,11 +218,13 @@ function askRemoval(...sources: SourceId[]) {
 }
 async function confirmRemoval() {
   const sources = removingSources.value.filter(({ source }) => !removalsPending.value.has(source)).map(({ source }) => source);
+  const alreadyProposed = removing.value.filter((source) => removalsPending.value.has(source));
   const single = removing.value.length === 1;
   removing.value = [];
   if (sources.length === 0) return;
   if (single) {
     await propose("/projects/contributions/submit-source-removal", api.projects.contributions["submit-source-removal"]({ project, source: sources[0]! }));
+    if (refusal.value === "") unpick(sources);
     return;
   }
   busy.value = true;
@@ -231,6 +233,7 @@ async function confirmRemoval() {
   const batch = crypto.randomUUID();
   let failed = 0;
   let reason = "";
+  const proposedIds: SourceId[] = [];
   for (const source of sources) {
     const result = await call(
       "/projects/contributions/submit-source-removal-in-batch",
@@ -239,9 +242,12 @@ async function confirmRemoval() {
     if ("failed" in result) {
       failed += 1;
       reason = result.failed;
-    }
+    } else proposedIds.push(source);
   }
   busy.value = false;
+  // Proposed sources (and ones already waiting for review) leave the selection; failures stay picked to
+  // retry, and if nothing could be proposed the selection is kept as it was.
+  if (proposedIds.length > 0) unpick([...proposedIds, ...alreadyProposed]);
   await loadPending();
   const proposed = sources.length - failed;
   const message =
@@ -292,6 +298,12 @@ function togglePick(source: SourceId) {
 }
 const pickAll = () => (picked.value = new Set(graph.value?.sources.map(({ source }) => source) ?? []));
 const clearPicks = () => (picked.value = new Set());
+/** Takes sources out of the selection after an action succeeded for them; selection mode stays on. */
+function unpick(sources: Iterable<SourceId>) {
+  const next = new Set(picked.value);
+  for (const source of sources) next.delete(source);
+  if (next.size !== picked.value.size) picked.value = next;
+}
 
 /** The picked sources, in the order they were picked. */
 const pickedSources = computed(() => {
@@ -333,31 +345,37 @@ async function copyPicked() {
  * checks as one source at a time. A refusal stops nothing: the rest are still tried, and the
  * count that changed is reported.
  */
-async function regroup(sources: SourceId[], change: (source: SourceId) => Promise<object>, done: (count: number) => string) {
-  if (sources.length === 0) return say("Nothing to change.");
+async function regroup(sources: SourceId[], change: (source: SourceId) => Promise<object>, done: (count: number) => string): Promise<SourceId[]> {
+  if (sources.length === 0) {
+    say("Nothing to change.");
+    return [];
+  }
   busy.value = true;
-  let failed = 0;
   let reason = "";
+  const changed: SourceId[] = [];
   for (const source of sources) {
     const result = await change(source);
-    if ("failed" in result) {
-      failed += 1;
-      reason = String(result.failed);
-    }
+    if ("failed" in result) reason = String(result.failed);
+    else changed.push(source);
   }
   busy.value = false;
   await loadGroups();
-  if (failed === 0) say(done(sources.length));
-  else say(`Changed ${sources.length - failed} of ${sources.length}. ${reason}`, true);
+  if (changed.length === sources.length) say(done(sources.length));
+  else say(`Changed ${changed.length} of ${sources.length}. ${reason}`, true);
+  return changed;
 }
 /** Puts every picked source in the group, moving those in another group. */
-function assignPicked(group: GroupId, name: string) {
+async function assignPicked(group: GroupId, name: string) {
+  const alreadyThere = pickedSources.value.filter(({ source }) => groupOf.value.get(source)?.group === group).map(({ source }) => source);
   const moving = pickedSources.value.filter(({ source }) => groupOf.value.get(source)?.group !== group).map(({ source }) => source);
-  return regroup(
+  const moved = await regroup(
     moving,
     (source) => call("/projects/groups/assign", api.projects.groups.assign({ group, source })),
     (count) => `Put ${sourcesWord(count)} in ${name}.`,
   );
+  // Sources now in the group (and ones already there) leave the selection; failures stay picked to retry,
+  // and if every move failed the selection is kept as it was.
+  if (moved.length > 0 || moving.length === 0) unpick([...moved, ...alreadyThere]);
 }
 
 /** "Create new group…" in the toolbar's Assign to group menu: the Groups dialog, making a group for the picks. */
@@ -398,11 +416,20 @@ const ungroupSummary = computed(() =>
 );
 async function confirmUngroup() {
   confirmingUngroup.value = false;
-  await regroup(
+  const notGrouped = pickedSources.value.filter(({ source }) => !groupOf.value.has(source)).map(({ source }) => source);
+  const ungrouped = await regroup(
     pickedInAGroup.value.map(({ source }) => source),
     (source) => call("/projects/groups/unassign", api.projects.groups.unassign({ project, source })),
     (count) => `${sourcesWord(count)} ungrouped.`,
   );
+  // Ungrouped sources (and ones that were in no group) leave the selection, unless nothing worked; failures stay picked.
+  unpick(ungrouped.length > 0 ? [...ungrouped, ...notGrouped] : []);
+}
+
+/** "Remove from groups" in the Remove menu: asks first, or says there is nothing to do. */
+function askUngroup() {
+  if (pickedInAGroup.value.length === 0) say("No grouped sources selected.");
+  else confirmingUngroup.value = true;
 }
 
 /**
@@ -560,20 +587,21 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
             <template v-if="picked.size > 0">
               <span class="divider" aria-hidden="true"></span>
               <ToolbarDropdown text="Assign to group" label="Assign the selected sources to a group" :disabled="busy">
-                <button type="button" role="menuitem" @click="newGroupForPicked">Create new group…</button>
+                <button type="button" role="menuitem" @click="newGroupForPicked">
+                  <span class="icon"><Icon name="plus" :size="16" /></span><span class="label">Create new group…</span>
+                </button>
                 <hr v-if="groupStyles.length" aria-hidden="true" />
                 <button v-for="row in groupStyles" :key="row.group" type="button" role="menuitem" @click="assignPicked(row.group, row.name)">
-                  <span class="dot" :style="{ background: row.color }"></span>{{ row.name }}
+                  <span class="icon"><span class="dot" :style="{ background: row.color }"></span></span><span class="label">{{ row.name }}</span>
                 </button>
               </ToolbarDropdown>
               <ToolbarDropdown text="Remove" label="Remove the selected sources" :disabled="busy">
-                <button type="button" role="menuitem" :disabled="pickedInAGroup.length === 0" @click="confirmingUngroup = true">
-                  <span>Remove from group<span class="detail">{{ pickedInAGroup.length === 0 ? "None of these is in a group" : "They stay in the graph" }}</span></span>
+                <button type="button" role="menuitem" @click="askUngroup">
+                  <span class="icon"><Icon name="folderMinus" :size="16" /></span><span class="label">Remove from groups</span>
                 </button>
                 <hr aria-hidden="true" />
                 <button type="button" role="menuitem" class="danger" @click="askRemoval(...pickedSources.map(({ source }) => source))">
-                  <Icon name="trash" :size="16" />
-                  <span>Propose removal from graph<span class="detail">A reviewer decides each one</span></span>
+                  <span class="icon"><Icon name="trash" :size="16" /></span><span class="label">Propose removal from graph</span>
                 </button>
               </ToolbarDropdown>
               <button type="button" class="copy" title="Copy URLs" aria-label="Copy URLs" @click="copyPicked"><Icon name="copy" :size="16" /></button>

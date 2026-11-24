@@ -51,6 +51,36 @@ Open http://localhost:3000 and create an account. With no `.env`, records are ke
 
 While you edit, run `bun run dev` in one terminal and `bun run --cwd frontend dev` in another, and open http://localhost:5173.
 
+### Keeping your data between restarts (optional)
+
+To keep your accounts and projects when the server stops, run MongoDB in Docker and point your own `.env` at it. Tests are unaffected: they always use their own in-memory database.
+
+1. Once: start MongoDB. It restarts with Docker Desktop and keeps its data in the `grabbithole-mongo` volume.
+
+   ```sh
+   docker run -d --name grabbithole-mongo --restart unless-stopped -p 127.0.0.1:27017:27017 \
+     -e MONGO_INITDB_ROOT_USERNAME=dev -e MONGO_INITDB_ROOT_PASSWORD=dev \
+     -v grabbithole-mongo:/data/db mongo:8.0
+   ```
+
+2. Once: put this line in `.env` (copy `.env.example`; never commit `.env`):
+
+   ```
+   MONGODB_URI=mongodb://dev:dev@127.0.0.1:27017/grabbithole?authSource=admin
+   ```
+
+When the server starts, it no longer prints "stores data in memory". Remove the line to go back to an in-memory database. `docker start grabbithole-mongo` starts the database if Docker Desktop did not, and `docker rm -f grabbithole-mongo && docker volume rm grabbithole-mongo` deletes it and all its data.
+
+### When to restart
+
+`bun run start` loads the backend once, when it starts, but serves the built frontend from `frontend/dist` on every request. So after a change:
+
+- **Backend** (`src/`, `generated/`, or a pull that touches them): stop the server (Ctrl-C) and run `bun run start` again. Until then, the page may call endpoints the running server does not have yet, which fail with "not found".
+- **Frontend only** (`frontend/src/`): run `bun run build` and reload the page.
+- **Both**, or unsure: `bun run build && bun run start`.
+
+With `bun run dev` and the frontend's dev server, both reload on their own; with `MONGODB_URI` set, those reloads no longer lose your data.
+
 | Command | What it does |
 |---|---|
 | `bun run generate` | Rewrites `generated/` from the design and code. Run it after changing a concept, a composition, or `design/`. |
