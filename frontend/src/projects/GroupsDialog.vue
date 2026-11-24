@@ -4,7 +4,8 @@ import type { GroupId, GroupStyle } from "../graph/types.ts";
 import Dialog from "../reusable/ui/Dialog.vue";
 
 /**
- * The project's topic groups: add one, rename one, or remove one (its sources become ungrouped).
+ * The project's topic groups: add one, rename one, or delete one (the page asks first; its sources
+ * become ungrouped and stay in the graph).
  * Opened from the selection toolbar's "Create new group…", `assigning` is how many selected
  * sources the new group will take, and the name box starts focused.
  */
@@ -38,7 +39,7 @@ function rename(group: GroupStyle, event: Event) {
           <span class="dot" :style="{ background: group.color }"></span>
           <input :value="group.name" type="text" maxlength="40" :aria-label="`Name of ${group.name}`" @change="rename(group, $event)" @keydown.enter="($event.target as HTMLInputElement).blur()" />
           <span class="count">{{ group.count }} {{ group.count === 1 ? "source" : "sources" }}</span>
-          <button type="button" class="text-button" :disabled="busy" @click="emit('remove', group.group)">Remove</button>
+          <button type="button" class="text-button" :disabled="busy" @click="emit('remove', group.group)">Delete</button>
         </li>
       </ul>
       <p v-if="assigning" class="quiet">

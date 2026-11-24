@@ -4,7 +4,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { shortName } from "./labels.ts";
 import { copySourceUrl, openSource, webAddress } from "./sourceActions.ts";
 import Icon from "../reusable/ui/Icon.vue";
-import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
+import type { GroupId, GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
 
 /**
  * Draws a research graph in one of two views. Each source is a pill with its name, in its group's
@@ -22,6 +22,9 @@ import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
  * that right-clicking it opens, asks to see it in the other view. The same menu opens the source's
  * page in a new tab, copies its address, or proposes removing it. When the view changes, the
  * selected source is brought to the middle and briefly pulses, so it is easy to find.
+ *
+ * In the group view, right-clicking a group's heading, or its "…" button (shown on hover or focus),
+ * opens the same kind of menu for the group: rename it, select all its sources, or delete it.
  *
  * In selection mode, clicking a source picks it or puts it back instead of selecting it, so
  * several can be acted on together. Double-clicking and the menu are off then, and every source
@@ -52,6 +55,10 @@ const emit = defineEmits<{
   toggle: [source: SourceId];
   /** Ask, from the menu, to propose removing a source. */
   proposeRemoval: [source: SourceId];
+  /** From a group's menu: rename it, pick all its sources, or delete it. */
+  renameGroup: [group: GroupId];
+  selectGroup: [group: GroupId];
+  deleteGroup: [group: GroupId];
 }>();
 
 const INK = "#1e2833";
@@ -374,7 +381,9 @@ function arrive() {
  * page or copy its address. It is placed in the frame's own coordinates, outside the zoomed stage,
  * so it stays a normal size.
  */
-const menu = ref<{ source: SourceId; url: string; x: number; y: number } | null>(null);
+type SourceMenu = { kind: "source"; source: SourceId; url: string; x: number; y: number };
+type GroupMenu = { kind: "group"; group: GroupId; name: string; count: number; x: number; y: number };
+const menu = ref<SourceMenu | GroupMenu | null>(null);
 const menuElement = ref<HTMLElement | null>(null);
 /**
  * The pill the menu was opened from. When the menu was opened from the keyboard, the focus goes
@@ -436,7 +445,34 @@ async function openMenu(event: MouseEvent, { source, url }: Source) {
   // A few pixels off the pointer, so the release that ends the right-click cannot land on an item.
   const x = (fromKeyboard ? pillBox.left : event.clientX + 4) - box.left;
   const y = (fromKeyboard ? pillBox.bottom + 4 : event.clientY + 4) - box.top;
-  menu.value = { source, url, x, y };
+  menu.value = { kind: "source", source, url, x, y };
+  await showMenu(box);
+}
+
+/**
+ * Opens a group's menu: from a right-click on its heading, at the pointer; from its "…" button or
+ * the keyboard, just under the heading. "Not grouped yet" is not a group and has no menu.
+ */
+async function openGroupMenu(event: MouseEvent, cluster: Cluster) {
+  if (cluster.key === "") return;
+  menuAskedAt = performance.now();
+  pressedItem = null;
+  const box = viewport.value?.getBoundingClientRect();
+  if (!box) return;
+  const target = event.currentTarget as HTMLElement;
+  const fromButton = event.type === "click";
+  menuFromKeyboard = fromButton ? event.detail === 0 : event.clientX === 0 && event.clientY === 0;
+  menuOpener = fromButton ? target : (target.querySelector<HTMLElement>(".group-more") ?? target);
+  const heading = (fromButton ? (target.closest(".label") ?? target) : target).getBoundingClientRect();
+  const underHeading = fromButton || menuFromKeyboard;
+  const x = (underHeading ? heading.left : event.clientX + 4) - box.left;
+  const y = (underHeading ? heading.bottom + 4 : event.clientY + 4) - box.top;
+  menu.value = { kind: "group", group: cluster.key as GroupId, name: cluster.name, count: cluster.count, x, y };
+  await showMenu(box);
+}
+
+/** Shows the open menu: listens for what dismisses it, keeps it inside the frame, and focuses its first item. */
+async function showMenu(box: DOMRect) {
   document.addEventListener("pointerdown", dismissIfOutside, true);
   document.addEventListener("keydown", escapeMenu);
   window.addEventListener("blur", closeMenu);
@@ -495,7 +531,7 @@ function onMenuPointerDown(event: PointerEvent) {
 /** Runs one of the menu's items, then the menu is closed by the action itself. */
 function choose(event: MouseEvent, action: "switch" | "open" | "copy" | "remove") {
   const chosen = menu.value;
-  if (chosen === null) return;
+  if (chosen === null || chosen.kind !== "source") return;
   if (event.detail > 0 && pressedItem !== event.currentTarget) return;
   pressedItem = null;
   if (action === "switch") showInOtherView(chosen.source);
@@ -504,6 +540,18 @@ function choose(event: MouseEvent, action: "switch" | "open" | "copy" | "remove"
     closeMenu();
     emit("proposeRemoval", chosen.source);
   } else void copyFromMenu(chosen.url);
+}
+
+/** Runs one of a group's menu items; the page does the work (a dialog, or picking its sources). */
+function chooseForGroup(event: MouseEvent, action: "rename" | "select" | "delete") {
+  const chosen = menu.value;
+  if (chosen === null || chosen.kind !== "group") return;
+  if (event.detail > 0 && pressedItem !== event.currentTarget) return;
+  pressedItem = null;
+  closeMenu();
+  if (action === "rename") emit("renameGroup", chosen.group);
+  else if (action === "select") emit("selectGroup", chosen.group);
+  else emit("deleteGroup", chosen.group);
 }
 
 /** Asks to see a source in the other view. */
@@ -556,7 +604,10 @@ function onWheel(event: WheelEvent) {
 let drag: { x: number; y: number; moved: boolean } | null = null;
 const dragging = ref(false);
 function onPointerDown(event: PointerEvent) {
-  if ((event.target as HTMLElement).closest(".pill, .context-menu")) return;
+  const target = event.target as HTMLElement;
+  if (target.closest(".pill, .context-menu, .group-more")) return;
+  // A right-click on a group's heading opens its menu; it does not drag or clear the selection.
+  if (event.button !== 0 && target.closest(".label")) return;
   drag = { x: event.clientX, y: event.clientY, moved: false };
   viewport.value?.setPointerCapture(event.pointerId);
 }
@@ -652,10 +703,22 @@ defineExpose({ fit, zoom });
           v-for="cluster in layout.clusters"
           :key="cluster.key"
           class="label"
-          :class="{ faded: selected !== null && !cluster.pills.some((pill) => near.has(pill.source.source)) }"
+          :class="{ faded: selected !== null && !cluster.pills.some((pill) => near.has(pill.source.source)), grouped: cluster.key !== '' }"
+          @contextmenu.prevent="openGroupMenu($event, cluster)"
           :style="{ left: `${cluster.x}px`, top: `${cluster.y}px`, color: cluster.color }"
         >
           {{ cluster.name }}<span>{{ cluster.count }}</span>
+          <button
+            v-if="cluster.key !== ''"
+            type="button"
+            class="group-more"
+            :class="{ open: menu?.kind === 'group' && menu.group === cluster.key }"
+            :aria-label="`Actions for ${cluster.name}`"
+            aria-haspopup="menu"
+            @click.stop="openGroupMenu($event, cluster)"
+          >
+            <Icon name="more" :size="14" />
+          </button>
         </p>
       </template>
       <template v-for="cluster in layout.clusters" :key="cluster.key">
@@ -669,7 +732,7 @@ defineExpose({ fit, zoom });
             plain: !pill.start && pill.color === null,
             selected: pill.source.source === selected,
             arrived: pill.source.source === arrived,
-            targeted: pill.source.source === menu?.source,
+            targeted: menu?.kind === 'source' && pill.source.source === menu.source,
             picked: selecting && picked.has(pill.source.source),
             faded: selected !== null && !near.has(pill.source.source),
           }"
@@ -694,7 +757,25 @@ defineExpose({ fit, zoom });
       </template>
     </div>
     <div
-      v-if="menu"
+      v-if="menu?.kind === 'group'"
+      ref="menuElement"
+      class="context-menu"
+      role="menu"
+      :aria-label="`Actions for ${menu.name}`"
+      :style="{ left: `${menu.x}px`, top: `${menu.y}px` }"
+      @contextmenu.prevent
+      @keydown="moveInMenu"
+      @pointerdown="onMenuPointerDown"
+    >
+      <button type="button" role="menuitem" @click="chooseForGroup($event, 'rename')"><Icon name="pencil" :size="16" />Rename group</button>
+      <button type="button" role="menuitem" :disabled="menu.count === 0" @click="chooseForGroup($event, 'select')">
+        <Icon name="select" :size="16" />Select all sources
+      </button>
+      <hr role="separator" />
+      <button type="button" role="menuitem" class="danger" @click="chooseForGroup($event, 'delete')"><Icon name="trash" :size="16" />Delete group</button>
+    </div>
+    <div
+      v-else-if="menu?.kind === 'source'"
       ref="menuElement"
       class="context-menu"
       role="menu"
@@ -774,6 +855,38 @@ defineExpose({ fit, zoom });
 }
 .label.faded {
   opacity: 0.25;
+}
+.label.grouped {
+  display: flex;
+  align-items: center;
+}
+/* The "…" beside a group's heading: hidden until the heading is hovered or the button has focus. */
+.group-more {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.label:hover .group-more,
+.group-more:focus-visible,
+.group-more.open {
+  opacity: 1;
+}
+.group-more:hover,
+.group-more:focus-visible,
+.group-more.open {
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+  outline: none;
 }
 .pill {
   position: absolute;

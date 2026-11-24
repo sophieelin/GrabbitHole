@@ -21,11 +21,13 @@ import type {
 import { useSession } from "../reusable/session.ts";
 import Icon from "../reusable/ui/Icon.vue";
 import { describeChange } from "./describe.ts";
+import DeleteGroupDialog from "./DeleteGroupDialog.vue";
 import GroupsDialog from "./GroupsDialog.vue";
 import PeopleDialog from "./PeopleDialog.vue";
 import ProposalList, { type ReviewRow } from "./ProposalList.vue";
 import RemoveFromGroupsDialog from "./RemoveFromGroupsDialog.vue";
 import RemoveSourceDialog from "./RemoveSourceDialog.vue";
+import RenameGroupDialog from "./RenameGroupDialog.vue";
 import SourcePanel from "./SourcePanel.vue";
 import { canSuggestGroups, type Suggestion } from "./suggest.ts";
 import SuggestDialog from "./SuggestDialog.vue";
@@ -147,6 +149,55 @@ const createGroup = (name: string) => changeGroups("/projects/groups/create", ap
 const renameGroup = (group: GroupId, name: string) =>
   changeGroups("/projects/groups/rename", api.projects.groups.rename({ group, name }));
 const removeGroup = (group: GroupId) => changeGroups("/projects/groups/remove", api.projects.groups.remove({ group }));
+
+/*
+ * A group's actions from its menu on the graph (and Delete from the Groups dialog): rename it,
+ * pick all its sources, or delete it after asking. They use the same Grouping endpoints as the
+ * Groups dialog, open to every member; deleting a group leaves its sources in the graph.
+ */
+const groupNamed = (group: GroupId | null) => groupStyles.value.find((row) => row.group === group) ?? null;
+const renamingGroup = ref<GroupId | null>(null);
+const deletingGroup = ref<GroupId | null>(null);
+function askRenameGroup(group: GroupId) {
+  groupRefusal.value = "";
+  renamingGroup.value = group;
+}
+async function confirmRenameGroup(name: string) {
+  const group = renamingGroup.value;
+  if (group === null) return;
+  if ((await renameGroup(group, name)) !== null) renamingGroup.value = null;
+}
+function closeRenameGroup() {
+  renamingGroup.value = null;
+  groupRefusal.value = "";
+}
+function askDeleteGroup(group: GroupId) {
+  groupRefusal.value = "";
+  deletingGroup.value = group;
+}
+async function confirmDeleteGroup() {
+  const doomed = groupNamed(deletingGroup.value);
+  deletingGroup.value = null;
+  if (doomed === null) return;
+  if ((await removeGroup(doomed.group)) === null) return;
+  const message =
+    doomed.count === 0
+      ? `Deleted ${doomed.name}.`
+      : `Deleted ${doomed.name}. ${doomed.count === 1 ? "Its source is" : `Its ${doomed.count} sources are`} now ungrouped.`;
+  if (selecting.value) say(message);
+  else notice.value = message;
+}
+/**
+ * "Select all sources" from a group's menu. Already selecting: the group's sources join the selection.
+ * Not yet: selection mode starts with just the group's sources.
+ */
+function selectGroup(group: GroupId) {
+  const members = groups.value.find((row) => row.group === group)?.sources.map(({ source }) => source) ?? [];
+  if (!selecting.value) {
+    startSelecting();
+    picked.value = new Set(members);
+  } else picked.value = new Set([...picked.value, ...members]);
+}
 
 function setGroup(group: GroupId | null) {
   if (selected.value === null) return;
@@ -579,6 +630,9 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
             @switch="switchView"
             @toggle="togglePick"
             @propose-removal="askRemoval"
+            @rename-group="askRenameGroup"
+            @select-group="selectGroup"
+            @delete-group="askDeleteGroup"
           />
           <div v-if="selecting" class="selection" role="toolbar" aria-label="Selected sources">
             <span class="count" aria-live="polite">{{ picked.size }} selected</span>
@@ -662,7 +716,7 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
           @propose-removal="proposeRemoval"
         />
       </div>
-      <p v-if="groupRefusal && !showGroups && !showSuggest" class="refusal bar" role="alert">{{ groupRefusal }}</p>
+      <p v-if="groupRefusal && !showGroups && !showSuggest && renamingGroup === null" class="refusal bar" role="alert">{{ groupRefusal }}</p>
       <p v-else-if="refusal && proposals.length === 0" class="refusal bar" role="alert">{{ refusal }}</p>
       <p v-else-if="notice" class="notice bar" role="status">{{ notice }}</p>
       <ProposalList
@@ -685,7 +739,7 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
       :assigning="assigningNewGroup ? picked.size : undefined"
       @create="createFromGroupsDialog"
       @rename="renameGroup"
-      @remove="removeGroup"
+      @remove="askDeleteGroup"
       @close="closeGroupsDialog"
     />
     <SuggestDialog
@@ -696,6 +750,22 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
       :refusal="groupRefusal"
       @apply="applySuggestions"
       @close="((showSuggest = false), (groupRefusal = ''))"
+    />
+    <RenameGroupDialog
+      v-if="groupNamed(renamingGroup)"
+      :name="groupNamed(renamingGroup)!.name"
+      :busy="busy"
+      :refusal="groupRefusal"
+      @rename="confirmRenameGroup"
+      @close="closeRenameGroup"
+    />
+    <DeleteGroupDialog
+      v-if="groupNamed(deletingGroup)"
+      :name="groupNamed(deletingGroup)!.name"
+      :count="groupNamed(deletingGroup)!.count"
+      :busy="busy"
+      @confirm="confirmDeleteGroup"
+      @close="deletingGroup = null"
     />
     <RemoveFromGroupsDialog
       v-if="confirmingUngroup"
