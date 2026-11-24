@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import dagre from "@dagrejs/dagre";
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { shortName } from "./labels.ts";
 import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
 
@@ -16,7 +16,9 @@ import type { GroupStyle, ResearchGraph, Source, SourceId } from "./types.ts";
  * right from where a session started, and every link is drawn as an arrow from the page a
  * researcher was on to the page they went to.
  *
- * Right-clicking a source asks to see it in the other view.
+ * Double-clicking a source, or choosing "Show in path view" or "Show in group view" from the menu
+ * that right-clicking it opens, asks to see it in the other view. When the view changes, the
+ * selected source is brought to the middle and briefly pulses, so it is easy to find.
  */
 const props = defineProps<{
   graph: ResearchGraph;
@@ -305,18 +307,100 @@ function fit() {
   reveal();
 }
 
+/** The pill drawn for a source in the current view, if there is one. */
+function pillFor(source: SourceId | null): Pill | undefined {
+  if (source === null) return undefined;
+  return layout.value.clusters.flatMap(({ pills }) => pills).find((pill) => pill.source.source === source);
+}
+
+/** Moves the drawing so the pill is in the middle of the frame. */
+function center(pill: Pill, box: DOMRect) {
+  view.x = box.width / 2 - pill.x * view.scale;
+  view.y = box.height / 2 - pill.y * view.scale;
+}
+
 /** If the selected source is outside the drawing's frame, moves the drawing to bring it to the middle. */
 function reveal() {
   const box = viewport.value?.getBoundingClientRect();
-  const pill = layout.value.clusters.flatMap(({ pills }) => pills).find(({ source }) => source.source === props.selected);
+  const pill = pillFor(props.selected);
   if (!box || !pill) return;
   const x = view.x + pill.x * view.scale;
   const y = view.y + pill.y * view.scale;
   const edge = pill.width / 2 + 24;
-  if (x < edge || x > box.width - edge || y < 40 || y > box.height - 70) {
-    view.x = box.width / 2 - pill.x * view.scale;
-    view.y = box.height / 2 - pill.y * view.scale;
+  if (x < edge || x > box.width - edge || y < 40 || y > box.height - 70) center(pill, box);
+}
+
+/** The source that just arrived in this view from the other one; it pulses for a moment. */
+const arrived = ref<SourceId | null>(null);
+let arrivedTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** After the view changes, brings the selected source to the middle and makes it pulse. */
+function arrive() {
+  const box = viewport.value?.getBoundingClientRect();
+  const pill = pillFor(props.selected);
+  if (!box || !pill) return;
+  center(pill, box);
+  clearTimeout(arrivedTimer);
+  arrived.value = pill.source.source;
+  arrivedTimer = setTimeout(() => (arrived.value = null), 1600);
+}
+
+/*
+ * The menu that right-clicking a source opens. Its one item shows the source in the other view.
+ * It is placed in the frame's own coordinates, outside the zoomed stage, so it stays a normal size.
+ */
+const menu = ref<{ source: SourceId; x: number; y: number } | null>(null);
+const menuElement = ref<HTMLElement | null>(null);
+const menuItem = ref<HTMLButtonElement | null>(null);
+/** The pill the menu was opened from, to give the focus back to when the menu is dismissed. */
+let menuOpener: HTMLElement | null = null;
+const otherView = computed(() => (props.mode === "group" ? "Show in path view" : "Show in group view"));
+
+async function openMenu(event: MouseEvent, source: SourceId) {
+  const box = viewport.value?.getBoundingClientRect();
+  if (!box) return;
+  menuOpener = event.currentTarget as HTMLElement;
+  emit("select", source);
+  // From the keyboard (the menu key, or shift + F10) there is no pointer, so the menu opens under the pill.
+  const fromKeyboard = event.clientX === 0 && event.clientY === 0;
+  const pillBox = menuOpener.getBoundingClientRect();
+  const x = (fromKeyboard ? pillBox.left : event.clientX) - box.left;
+  const y = (fromKeyboard ? pillBox.bottom + 4 : event.clientY) - box.top;
+  menu.value = { source, x, y };
+  document.addEventListener("pointerdown", dismissIfOutside, true);
+  document.addEventListener("keydown", escapeMenu);
+  window.addEventListener("blur", closeMenu);
+  await nextTick();
+  // Keep the whole menu inside the frame.
+  const size = menuElement.value?.getBoundingClientRect();
+  if (menu.value && size) {
+    menu.value.x = Math.max(8, Math.min(menu.value.x, box.width - size.width - 8));
+    menu.value.y = Math.max(8, Math.min(menu.value.y, box.height - size.height - 8));
   }
+  menuItem.value?.focus();
+}
+
+function closeMenu() {
+  menu.value = null;
+  document.removeEventListener("pointerdown", dismissIfOutside, true);
+  document.removeEventListener("keydown", escapeMenu);
+  window.removeEventListener("blur", closeMenu);
+}
+
+function dismissIfOutside(event: PointerEvent) {
+  if (!menuElement.value?.contains(event.target as Node)) closeMenu();
+}
+
+function escapeMenu(event: KeyboardEvent) {
+  if (event.key !== "Escape") return;
+  closeMenu();
+  menuOpener?.focus();
+}
+
+/** Asks to see a source in the other view. */
+function showInOtherView(source: SourceId) {
+  closeMenu();
+  emit("switch", source);
 }
 
 function zoom(factor: number, at?: { x: number; y: number }) {
@@ -330,6 +414,7 @@ function zoom(factor: number, at?: { x: number; y: number }) {
 }
 
 function onWheel(event: WheelEvent) {
+  closeMenu();
   const box = viewport.value!.getBoundingClientRect();
   // Pinching (or ctrl + scroll) zooms; plain scrolling moves the drawing, as on a map.
   if (event.ctrlKey || event.metaKey) {
@@ -343,7 +428,7 @@ function onWheel(event: WheelEvent) {
 let drag: { x: number; y: number; moved: boolean } | null = null;
 const dragging = ref(false);
 function onPointerDown(event: PointerEvent) {
-  if ((event.target as HTMLElement).closest(".pill")) return;
+  if ((event.target as HTMLElement).closest(".pill, .context-menu")) return;
   drag = { x: event.clientX, y: event.clientY, moved: false };
   viewport.value?.setPointerCapture(event.pointerId);
 }
@@ -377,10 +462,21 @@ const observer = new ResizeObserver(() => {
   requestAnimationFrame(fit);
 });
 onMounted(() => viewport.value && observer.observe(viewport.value));
-onBeforeUnmount(() => observer.disconnect());
+onBeforeUnmount(() => {
+  observer.disconnect();
+  closeMenu();
+  clearTimeout(arrivedTimer);
+});
 watch(
-  () => [layout.value.width, layout.value.height, props.mode],
-  () => fit(),
+  () => [layout.value.width, layout.value.height, props.mode] as const,
+  (now, before) => {
+    fit();
+    // A new view: the menu was about the old one, and the selected source is brought into sight.
+    if (before !== undefined && now[2] !== before[2]) {
+      closeMenu();
+      arrive();
+    }
+  },
   { flush: "post" },
 );
 watch(() => props.selected, reveal, { flush: "post" });
@@ -437,6 +533,7 @@ defineExpose({ fit, zoom });
             start: pill.start,
             plain: !pill.start && pill.color === null,
             selected: pill.source.source === selected,
+            arrived: pill.source.source === arrived,
             faded: selected !== null && !near.has(pill.source.source),
           }"
           :style="{
@@ -449,11 +546,22 @@ defineExpose({ fit, zoom });
           :aria-pressed="pill.source.source === selected"
           :title="pill.source.url"
           @click="emit('select', pill.source.source)"
-          @contextmenu.prevent="emit('switch', pill.source.source)"
+          @dblclick="emit('switch', pill.source.source)"
+          @contextmenu.prevent="openMenu($event, pill.source.source)"
         >
           <span v-if="pill.source.notes.length" class="noted" aria-label="Has a note"></span>{{ pill.name }}
         </button>
       </template>
+    </div>
+    <div
+      v-if="menu"
+      ref="menuElement"
+      class="context-menu"
+      role="menu"
+      :style="{ left: `${menu.x}px`, top: `${menu.y}px` }"
+      @contextmenu.prevent
+    >
+      <button ref="menuItem" type="button" role="menuitem" @click="showInOtherView(menu.source)">{{ otherView }}</button>
     </div>
   </div>
 </template>
@@ -558,6 +666,58 @@ defineExpose({ fit, zoom });
 }
 .pill.faded {
   opacity: 0.18;
+}
+/* A source that just arrived from the other view: a ring in the accent color spreads out from it twice. */
+.pill.arrived {
+  animation: arrive 0.8s ease-out 2;
+}
+@keyframes arrive {
+  from {
+    box-shadow:
+      0 0 0 3px var(--graph-bg, #faf6ee),
+      0 0 0 6px var(--color-text),
+      0 0 0 6px var(--color-accent);
+  }
+  to {
+    box-shadow:
+      0 0 0 3px var(--graph-bg, #faf6ee),
+      0 0 0 6px var(--color-text),
+      0 0 0 22px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill.arrived {
+    animation: none;
+  }
+}
+.context-menu {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  cursor: default;
+}
+.context-menu button {
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.context-menu button:hover,
+.context-menu button:focus-visible {
+  background: var(--color-page);
+  outline: none;
 }
 .noted {
   flex: none;
