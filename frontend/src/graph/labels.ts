@@ -58,3 +58,19 @@ export function titleOf(url: string): string {
   const name = shortName(url, 60);
   return name === site ? site : `${name} · ${site}`;
 }
+
+/** A source as the graph holds it. `title` is the page's own title, once sources carry one. */
+export interface NamedSource {
+  url: string;
+  title?: string | null;
+}
+
+/**
+ * The name to show for a source: its page title when it has one, otherwise the name `shortName`
+ * makes from its URL. Nothing records page titles yet, so for now this is always the URL's name.
+ */
+export function sourceName(source: NamedSource, limit = 60): string {
+  const title = source.title?.trim();
+  if (!title) return shortName(source.url, limit);
+  return title.length > limit ? `${title.slice(0, limit - 1).trimEnd()}…` : title;
+}

@@ -367,8 +367,17 @@ function keepArrivedCentered() {
 }
 
 function arrive() {
+  arriveAt(props.selected);
+}
+
+/**
+ * Brings a source to the middle of the drawing and makes it pulse, as after switching views. If the
+ * source panel opens at the same time and narrows the drawing, it is centered again in the room left.
+ * The page calls this for a source chosen from the search.
+ */
+function arriveAt(source: SourceId | null) {
   const box = viewport.value?.getBoundingClientRect();
-  const pill = pillFor(props.selected);
+  const pill = pillFor(source);
   if (!box || !pill) return;
   center(pill, box);
   clearTimeout(arrivedTimer);
@@ -667,7 +676,7 @@ watch(
 watch(() => props.selected, reveal, { flush: "post" });
 watch(() => props.selecting, closeMenu);
 
-defineExpose({ fit, zoom });
+defineExpose({ fit, zoom, focusSource: arriveAt });
 </script>
 
 <template>

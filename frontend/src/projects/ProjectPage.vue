@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { call } from "../api/call.ts";
 import { api } from "../api/client.ts";
 import GraphCanvas from "../graph/GraphCanvas.vue";
+import SourceSearch from "../graph/SourceSearch.vue";
 import { titleOf } from "../graph/labels.ts";
 import { copySourceUrls } from "../graph/sourceActions.ts";
 import type {
@@ -187,6 +188,16 @@ async function confirmDeleteGroup() {
   if (selecting.value) say(message);
   else notice.value = message;
 }
+/**
+ * A source chosen from the search: selected (which opens its panel) in the current view, then brought
+ * to the middle and pulsed, as after switching views, and kept there as the panel narrows the drawing.
+ */
+async function focusSearched(source: SourceId) {
+  selectedId.value = source;
+  await nextTick();
+  canvas.value?.focusSource(source);
+}
+
 /**
  * "Select all sources" from a group's menu. Already selecting: the group's sources join the selection.
  * Not yet: selection mode starts with just the group's sources.
@@ -634,6 +645,7 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
             @select-group="selectGroup"
             @delete-group="askDeleteGroup"
           />
+          <SourceSearch v-if="!selecting" :sources="graph.sources" :group-of="groupOf" @choose="focusSearched" />
           <div v-if="selecting" class="selection" role="toolbar" aria-label="Selected sources">
             <span class="count" aria-live="polite">{{ picked.size }} selected</span>
             <button type="button" class="link" :disabled="picked.size === graph.sources.length" @click="pickAll">Select all</button>
@@ -866,6 +878,8 @@ h1 {
   min-width: 0;
   display: flex;
   background: #faf6ee;
+  /* The search sizes itself to the drawing's width (see SourceSearch.vue). */
+  container-type: inline-size;
 }
 .views {
   position: absolute;
