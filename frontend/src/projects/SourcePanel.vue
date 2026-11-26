@@ -17,11 +17,13 @@ const props = defineProps<{
   group: GroupStyle | null;
   /** The view the graph is in, so the panel can offer the other one. */
   mode: "group" | "path";
+  currentUser: string | null;
 }>();
 const emit = defineEmits<{
   select: [source: SourceId];
   close: [];
   proposeNote: [text: string];
+  proposeNoteEdit: [note: Note, text: string];
   proposeNoteRemoval: [note: Note];
   proposeRemoval: [];
   switchView: [];
@@ -73,11 +75,38 @@ const reachedFrom = computed(() => neighbours("destination"));
 const ledTo = computed(() => neighbours("source"));
 
 const draft = ref("");
+const editingNote = ref<string | null>(null);
+const editDraft = ref("");
+
+function startEditing(note: Note) {
+  editingNote.value = note.note;
+  editDraft.value = note.text;
+}
+
+function cancelEditing() {
+  editingNote.value = null;
+  editDraft.value = "";
+}
+
+
+function submitNoteEdit(note: Note) {
+  const updated = editDraft.value.trim();
+
+  if (
+    updated === "" ||
+    updated === note.text
+  ) return;
+
+  emit("proposeNoteEdit", note, updated);
+  cancelEditing();
+}
+
 watch(
   () => props.source.source,
   () => {
     draft.value = "";
     naming.value = false;
+    cancelEditing();
     clearTimeout(copyTimer);
     copyResult.value = null;
   },
@@ -137,15 +166,65 @@ function submitNote() {
     <section>
       <h3>Notes</h3>
       <p v-if="source.notes.length === 0" class="quiet">No notes on this source yet.</p>
-      <ul v-else class="notes">
-        <li v-for="note in source.notes" :key="note.note">
-          <p class="note">{{ note.text }}</p>
-          <p class="by">
-            {{ note.authorName }}
-            <button type="button" class="text-button small" :disabled="busy" @click="emit('proposeNoteRemoval', note)">Propose removing</button>
-          </p>
-        </li>
-      </ul>
+      
+<ul v-else class="notes">
+  <li v-for="note in source.notes" :key="note.note">
+    <template v-if="editingNote === note.note">
+      <form class="add" @submit.prevent="submitNoteEdit(note)">
+        <textarea
+          v-model="editDraft"
+          rows="3"
+          maxlength="2000"
+          aria-label="Edit note"
+        ></textarea>
+
+        <button
+          type="submit"
+          class="button outline"
+          :disabled="busy || editDraft.trim() === '' || editDraft.trim() === note.text"
+        >
+          Propose edit
+        </button>
+
+        <button
+          type="button"
+          class="text-button small"
+          @click="cancelEditing"
+        >
+          Cancel
+        </button>
+      </form>
+    </template>
+
+    <template v-else>
+      <p class="note">{{ note.text }}</p>
+
+      <p class="by">
+        <span>{{ note.authorName }}</span>
+
+        <button
+          v-if="currentUser !== null && note.author === currentUser"
+          type="button"
+          class="text-button small"
+          :disabled="busy"
+          @click="startEditing(note)"
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          class="text-button small"
+          :disabled="busy"
+          @click="emit('proposeNoteRemoval', note)"
+        >
+          Propose removing
+        </button>
+      </p>
+    </template>
+  </li>
+</ul>
+
       <form class="add" @submit.prevent="submitNote">
         <textarea v-model="draft" rows="3" maxlength="2000" placeholder="Why does this source matter?" aria-label="New note"></textarea>
         <button type="submit" class="button outline" :disabled="busy || draft.trim() === ''">Propose note</button>

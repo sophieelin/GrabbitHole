@@ -1513,4 +1513,83 @@ describe("accepting a source removal whose source is already gone", () => {
     expect((await Contributing._proposal({ proposal: forC }))[0]?.status).toBe("ACCEPTED");
     expect(await Contributing._pending({ target })).toEqual([]);
   });
+
+
+
+
+  
+});
+
+
+
+test("a project member cannot propose editing another member's note", async () => {
+  const { application, api, register } = await startGrabbitHole();
+  const { Collaborating, DiscoveryLinking, Contributing } =
+    application.concepts;
+
+  const maya = await register("maya");
+  const sam = await register("sam");
+
+  const { project } = ok(
+    await Collaborating.createProject({
+      owner: maya.user,
+      name: "Roman History",
+    }),
+  );
+
+  await application.whenIdle();
+
+  const [{ item: target }] =
+    await Collaborating._getItem({ project });
+
+  // Sam joins Maya's project.
+  const { invitation } = ok(
+    await Collaborating.invite({
+      project,
+      inviter: maya.user,
+      invitee: sam.user,
+    }),
+  );
+
+  ok(
+    await Collaborating.acceptInvitation({
+      invitation,
+      user: sam.user,
+    }),
+  );
+
+  // Maya creates a source and writes a note.
+  const { source } = ok(
+    await DiscoveryLinking.addSource({
+      graph: target,
+      url: "https://example.com/roman-history",
+      contributor: maya.user,
+    }),
+  );
+
+  const { note } = ok(
+    await DiscoveryLinking.addNoteToSource({
+      source,
+      author: maya.user,
+      text: "Original note by Maya",
+    }),
+  );
+
+  // Sam is a member, but not the note's author.
+  const result = await api["/projects/contributions/submit-note-edit"]({
+    session: sam.session,
+    project,
+    note,
+    text: "Unauthorized edit by Sam",
+  });
+
+  expect(result).toEqual({ error: "FORBIDDEN" });
+
+  // The original note remains unchanged.
+  const [storedNote] = await DiscoveryLinking._note({ note });
+  expect(storedNote?.text).toBe("Original note by Maya");
+
+  // No edit proposal was created.
+  const pending = await Contributing._pending({ target });
+  expect(pending).toEqual([]);
 });

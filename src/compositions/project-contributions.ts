@@ -95,6 +95,7 @@ const SubmitNoteEdit = endpoint(
           }),
           DiscoveryLinking._note({ note }).is({
             graph: target,
+            author: user,
           }),
           compute(
             computations.makeEditNoteChange,
@@ -120,6 +121,28 @@ const SubmitNoteEdit = endpoint(
         )
           .then(respond({ error: "NOTE_NOT_FOUND" }))
           .named("notInGraph"),
+
+        // A project member cannot edit another author's note.
+        where(
+          Collaborating._canView({ project, user }).is({
+            allowed: true,
+          }),
+          Collaborating._getItem({ project }).is({
+            item: target,
+          }),
+          DiscoveryLinking._note({ note }).is({
+            graph: target,
+          }),
+          no(
+            DiscoveryLinking._note({ note }).is({
+              graph: target,
+              author: user,
+            }),
+          ),
+        )
+          .then(respond({ error: "FORBIDDEN" }))
+          .named("notNoteAuthor"),
+
 
         where(
           Collaborating._canView({ project, user }).is({

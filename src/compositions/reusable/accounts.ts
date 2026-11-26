@@ -12,7 +12,7 @@ const Me = endpoint(
     receive({ session })
       .then(SignIn.use({ session }).responds({ subject: user }))
       .then(
-        where(Registering._username({ user }).is({ username })).then(respond({ username })),
+        where(Registering._username({ user }).is({ username })).then(respond({ user, username })),
       ),
   { validators: { input: textInput } },
 );

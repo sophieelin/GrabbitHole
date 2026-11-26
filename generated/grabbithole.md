@@ -1646,7 +1646,7 @@ where
   earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
   Collaborating._canView (project, user) has (allowed: true)
   Collaborating._getItem (project) has (item: target)
-  DiscoveryLinking._note (note) has (graph: target)
+  DiscoveryLinking._note (note) has (author: user, graph: target)
   change is makeEditNoteChange (note, text)
 then
   Contributing.propose (change, target, user)
@@ -1696,6 +1696,24 @@ where
   no DiscoveryLinking._note (note) has (graph: target)
 then
   RequestBoundary.respond (error: "NOTE_NOT_FOUND", requestId)
+```
+
+### projectContributions.SubmitNoteEdit:notNoteAuthor#2
+
+Authored path: `projectContributions.SubmitNoteEdit`.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 137.
+- Covered by [Project contributions](../design/compositions/project-contributions.md), line 146.
+
+```reaction
+when SignIn.use (session, subject: user), asked by projectContributions.SubmitNoteEdit
+where
+  earlier, RequestBoundary.request (note, path: "/projects/contributions/submit-note-edit", project, requestId, session, text)
+  Collaborating._canView (project, user) has (allowed: true)
+  Collaborating._getItem (project) has (item: target)
+  DiscoveryLinking._note (note) has (graph: target)
+  no DiscoveryLinking._note (note) has (author: user, graph: target)
+then
+  RequestBoundary.respond (error: "FORBIDDEN", requestId)
 ```
 
 ### projectContributions.SubmitNoteRemoval
@@ -3142,7 +3160,7 @@ where
   Registering._username (user) has (username)
   earlier, RequestBoundary.request (path: "/auth/me", requestId, session)
 then
-  RequestBoundary.respond (requestId, username)
+  RequestBoundary.respond (requestId, user, username)
 ```
 
 ### reusable.accounts.leaving.SignOut

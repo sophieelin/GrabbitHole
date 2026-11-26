@@ -38,6 +38,7 @@ export type GrabbitHoleWire = {
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>[0], ["session"]>>;
     };
     output: {
+      "user": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>>, ["subject"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>]>>;
       "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
     };
     error: { error: AppWideError | "INVALID_INPUT" | "NOT_SIGNED_IN" };
@@ -492,6 +493,7 @@ export type GrabbitHoleWireHttp = {
   "/auth/me": {
     input: Record<string, never>;
     output: {
+      "user": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["SignIn"]["use"]>>, ["subject"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>[0], ["user"]>]>>;
       "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Registering"]["_username"]>>>, ["username"]>>;
     };
     error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };

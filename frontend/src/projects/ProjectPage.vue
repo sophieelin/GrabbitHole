@@ -260,6 +260,18 @@ function proposeNote(text: string) {
 function proposeNoteRemoval(note: Note) {
   void propose("/projects/contributions/submit-note-removal", api.projects.contributions["submit-note-removal"]({ project, note: note.note }));
 }
+
+function proposeNoteEdit(note: Note, text: string) {
+  void propose(
+    "/projects/contributions/submit-note-edit",
+    api.projects.contributions["submit-note-edit"]({
+      project,
+      note: note.note,
+      text,
+    }),
+  );
+}
+
 /*
  * Proposing to remove sources: one from the source panel or the graph's menu, or several picked in
  * selection mode. All ask first, in the same dialog. One source is one REMOVE_SOURCE proposal;
@@ -718,6 +730,7 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
           :groups="groupStyles"
           :group="groupOf.get(selected.source) ?? null"
           :mode="mode"
+          :current-user="me?.user ?? null"
           @switch-view="switchView()"
           @set-group="setGroup"
           @new-group="newGroupForSelected"
@@ -726,6 +739,7 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
           @propose-note="proposeNote"
           @propose-note-removal="proposeNoteRemoval"
           @propose-removal="proposeRemoval"
+          @propose-note-edit="proposeNoteEdit"
         />
       </div>
       <p v-if="groupRefusal && !showGroups && !showSuggest && renamingGroup === null" class="refusal bar" role="alert">{{ groupRefusal }}</p>

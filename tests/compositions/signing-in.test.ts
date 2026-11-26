@@ -6,14 +6,17 @@ describe("Signing in", () => {
   test("Dylan signs up with a password, signs out, and signs back in", async () => {
     const { api, register } = await startGrabbitHole();
     const dylan = await register("dylan");
-    expect(await api.auth.me({ session: dylan.session })).toEqual({ username: "dylan" });
+    expect(await api.auth.me({ session: dylan.session })).toEqual({
+  user: dylan.user,
+  username: "dylan",
+});
 
     ok(await api.auth.logout({ session: dylan.session }));
     expect(await api.auth.me({ session: dylan.session })).toEqual({ error: "NOT_SIGNED_IN" });
 
     const again = ok(await api.auth.login({ username: "dylan", password: "correct horse" }));
     expect(again.user).toBe(dylan.user);
-    expect(await api.auth.me({ session: again.session })).toEqual({ username: "dylan" });
+    expect(await api.auth.me({ session: again.session })).toEqual({ user: dylan.user, username: "dylan" });
   });
 
   test("a taken username, a wrong password, and an unknown username are each refused", async () => {
