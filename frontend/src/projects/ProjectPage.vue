@@ -384,6 +384,58 @@ const pickedSources = computed(() => {
   const byId = new Map(graph.value?.sources.map((row) => [row.source, row]) ?? []);
   return [...picked.value].flatMap((id) => byId.get(id) ?? []);
 });
+
+/** Propose a directed connection between two selected sources. */
+const connecting = ref(false);
+const connectionFrom = ref<SourceId | null>(null);
+const connectionTo = ref<SourceId | null>(null);
+
+function askConnection() {
+  if (pickedSources.value.length !== 2) return;
+
+  connectionFrom.value = pickedSources.value[0]!.source;
+  connectionTo.value = pickedSources.value[1]!.source;
+  connecting.value = true;
+}
+
+function cancelConnection() {
+  connecting.value = false;
+  connectionFrom.value = null;
+  connectionTo.value = null;
+}
+
+async function confirmConnection() {
+  const source = connectionFrom.value;
+  const destination = connectionTo.value;
+
+  if (source === null || destination === null || source === destination) return;
+
+  // Prevent proposing a connection that already exists.
+  if (
+    graph.value?.connections.some(
+      (row) =>
+        row.source === source &&
+        row.destination === destination,
+    )
+  ) {
+    say("These sources are already connected in that direction.", true);
+    return;
+  }
+
+  cancelConnection();
+
+  await propose(
+    "/projects/contributions/submit-connection",
+    api.projects.contributions["submit-connection"]({
+      project,
+      source,
+      destination,
+    }),
+  );
+
+  stopSelecting();
+}
+
 const pickedInAGroup = computed(() => pickedSources.value.filter(({ source }) => groupOf.value.has(source)));
 
 // A source removed from the graph (an accepted removal) is no longer picked.
@@ -682,6 +734,19 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
                   <span class="icon"><Icon name="trash" :size="16" /></span><span class="label">Propose removal from graph</span>
                 </button>
               </ToolbarDropdown>
+
+            
+            <button
+              type="button"
+              class="connection-trigger"
+              :disabled="pickedSources.length !== 2 || busy"
+              title="Select exactly two sources to propose a connection"
+              @click="askConnection"
+            >
+              Propose connection
+            </button>
+
+
               <button type="button" class="copy" title="Copy URLs" aria-label="Copy URLs" @click="copyPicked"><Icon name="copy" :size="16" /></button>
             </template>
             <span class="divider" aria-hidden="true"></span>
@@ -822,7 +887,78 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
       @close="showPeople = false"
     />
   </section>
+
+<div
+  v-if="connecting"
+  class="connection-overlay"
+  role="presentation"
+  @click.self="cancelConnection"
+>
+  <section
+    class="connection-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="connection-title"
+  >
+    <h2 id="connection-title">Propose connection</h2>
+
+    <p>Choose which source leads to the other.</p>
+
+    <label for="connection-from">From</label>
+    <select id="connection-from" v-model="connectionFrom">
+      <option
+        v-for="row in pickedSources"
+        :key="row.source"
+        :value="row.source"
+      >
+        {{ titleOf(row.url) }}
+      </option>
+    </select>
+
+    <label for="connection-to">To</label>
+    <select id="connection-to" v-model="connectionTo">
+      <option
+        v-for="row in pickedSources"
+        :key="row.source"
+        :value="row.source"
+      >
+        {{ titleOf(row.url) }}
+      </option>
+    </select>
+
+    <p class="quiet">
+      The connection will appear after a reviewer approves it.
+    </p>
+
+    <div class="connection-actions">
+      <button
+        type="button"
+        class="button outline"
+        @click="cancelConnection"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="button"
+        :disabled="
+          busy ||
+          connectionFrom === null ||
+          connectionTo === null ||
+          connectionFrom === connectionTo
+        "
+        @click="confirmConnection"
+      >
+        Submit proposal
+      </button>
+    </div>
+  </section>
+</div>
+
 </template>
+
+
 
 <style scoped>
 .page {
@@ -1120,6 +1256,64 @@ h1 {
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
 }
+.connection-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px;
+}
+
+.connection-dialog {
+  width: min(100%, 440px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.connection-dialog h2 {
+  margin: 0;
+}
+
+.connection-dialog select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.connection-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+
+.selection .connection-trigger {
+  width: auto;
+  min-width: max-content;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.selection .connection-trigger:not(:disabled):hover {
+  background: var(--color-page);
+  border-color: var(--color-text);
+}
+
 @media (max-width: 800px) {
   .page {
     height: auto;
@@ -1136,5 +1330,9 @@ h1 {
     flex: none;
     height: 420px;
   }
+
+
+
+
 }
 </style>
