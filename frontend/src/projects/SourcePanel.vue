@@ -4,6 +4,7 @@ import { labelOf, titleOf } from "../graph/labels.ts";
 import { copySourceUrl, webAddress } from "../graph/sourceActions.ts";
 import Icon from "../reusable/ui/Icon.vue";
 import type { GroupId, GroupStyle, Note, ResearchGraph, Source, SourceId } from "../graph/types.ts";
+type ConnectionId = ResearchGraph["connections"][number]["connection"];
 
 /**
  * Everything recorded about one source: its URL, the notes on it, who contributed it, and the
@@ -26,6 +27,8 @@ const emit = defineEmits<{
   proposeNoteEdit: [note: Note, text: string];
   proposeNoteRemoval: [note: Note];
   proposeRemoval: [];
+  proposeConnectionRemoval: [connection: ConnectionId];
+  proposeConnectionNote: [connection: ConnectionId, text: string];
   switchView: [];
   setGroup: [group: GroupId | null];
   newGroup: [name: string];
@@ -78,6 +81,31 @@ const draft = ref("");
 const editingNote = ref<string | null>(null);
 const editDraft = ref("");
 
+const notingConnection = ref<ConnectionId | null>(null);
+
+const connectionDraft = ref("");
+
+function startConnectionNote(connection: ConnectionId) {
+  notingConnection.value = connection;
+  connectionDraft.value = "";
+}
+
+function cancelConnectionNote() {
+  notingConnection.value = null;
+  connectionDraft.value = "";
+}
+
+function submitConnectionNote() {
+  const connection = notingConnection.value;
+  const text = connectionDraft.value.trim();
+
+  if (connection === null || text === "") return;
+
+  emit("proposeConnectionNote", connection, text);
+  cancelConnectionNote();
+}
+
+
 function startEditing(note: Note) {
   editingNote.value = note.note;
   editDraft.value = note.text;
@@ -89,13 +117,11 @@ function cancelEditing() {
 }
 
 
+
 function submitNoteEdit(note: Note) {
   const updated = editDraft.value.trim();
 
-  if (
-    updated === "" ||
-    updated === note.text
-  ) return;
+  if (updated === "" || updated === note.text) return;
 
   emit("proposeNoteEdit", note, updated);
   cancelEditing();
@@ -107,6 +133,7 @@ watch(
     draft.value = "";
     naming.value = false;
     cancelEditing();
+    cancelConnectionNote();
     clearTimeout(copyTimer);
     copyResult.value = null;
   },
@@ -236,7 +263,121 @@ function submitNote() {
       <ul class="links">
         <li v-for="row in reachedFrom" :key="row.connection.connection">
           <button type="button" class="text-button link" @click="emit('select', row.id)">{{ titleOf(row.url) }}</button>
-          <p v-for="note in row.connection.notes" :key="note.note" class="note">{{ note.text }}</p>
+          
+<div
+  v-for="note in row.connection.notes"
+  :key="note.note"
+  class="connection-note"
+>
+  <template v-if="editingNote === note.note">
+    <form class="add" @submit.prevent="submitNoteEdit(note)">
+      <textarea
+        v-model="editDraft"
+        rows="3"
+        maxlength="2000"
+        aria-label="Edit connection note"
+      ></textarea>
+
+      <button
+        type="submit"
+        class="button outline"
+        :disabled="
+          busy ||
+          editDraft.trim() === '' ||
+          editDraft.trim() === note.text
+        "
+      >
+        Propose edit
+      </button>
+
+      <button
+        type="button"
+        class="text-button small"
+        @click="cancelEditing"
+      >
+        Cancel
+      </button>
+    </form>
+  </template>
+
+  <template v-else>
+    <p class="note">{{ note.text }}</p>
+
+    <div class="connection-note-meta">
+      <span>{{ note.authorName }}</span>
+
+      <button
+        v-if="currentUser !== null && note.author === currentUser"
+        type="button"
+        class="text-button small"
+        :disabled="busy"
+        @click="startEditing(note)"
+      >
+        Edit
+      </button>
+
+      <button
+        type="button"
+        class="text-button small"
+        :disabled="busy"
+        @click="emit('proposeNoteRemoval', note)"
+      >
+        Propose removing
+      </button>
+    </div>
+  </template>
+</div>
+
+
+          <div class="connection-tools">
+            <button
+              type="button"
+              class="text-button small"
+              :disabled="busy"
+              @click="startConnectionNote(row.connection.connection)"
+            >
+              Add note
+            </button>
+
+            <button
+              type="button"
+              class="text-button small danger"
+              :disabled="busy"
+              @click="emit('proposeConnectionRemoval', row.connection.connection)"
+            >
+              Propose removing connection
+            </button>
+          </div>
+
+          <form
+            v-if="notingConnection === row.connection.connection"
+            class="add"
+            @submit.prevent="submitConnectionNote"
+          >
+            <textarea
+              v-model="connectionDraft"
+              rows="3"
+              maxlength="2000"
+              placeholder="Explain the relationship between these sources"
+              aria-label="Connection note"
+            ></textarea>
+
+            <button
+              type="submit"
+              class="button outline"
+              :disabled="busy || connectionDraft.trim() === ''"
+            >
+              Propose note
+            </button>
+
+            <button
+              type="button"
+              class="text-button small"
+              @click="cancelConnectionNote"
+            >
+              Cancel
+            </button>
+          </form>
         </li>
       </ul>
     </section>
@@ -246,7 +387,120 @@ function submitNote() {
       <ul class="links">
         <li v-for="row in ledTo" :key="row.connection.connection">
           <button type="button" class="text-button link" @click="emit('select', row.id)">{{ titleOf(row.url) }}</button>
-          <p v-for="note in row.connection.notes" :key="note.note" class="note">{{ note.text }}</p>
+          
+<div
+  v-for="note in row.connection.notes"
+  :key="note.note"
+  class="connection-note"
+>
+  <template v-if="editingNote === note.note">
+    <form class="add" @submit.prevent="submitNoteEdit(note)">
+      <textarea
+        v-model="editDraft"
+        rows="3"
+        maxlength="2000"
+        aria-label="Edit connection note"
+      ></textarea>
+
+      <button
+        type="submit"
+        class="button outline"
+        :disabled="
+          busy ||
+          editDraft.trim() === '' ||
+          editDraft.trim() === note.text
+        "
+      >
+        Propose edit
+      </button>
+
+      <button
+        type="button"
+        class="text-button small"
+        @click="cancelEditing"
+      >
+        Cancel
+      </button>
+    </form>
+  </template>
+
+  <template v-else>
+    <p class="note">{{ note.text }}</p>
+
+    <div class="connection-note-meta">
+      <span>{{ note.authorName }}</span>
+
+      <button
+        v-if="currentUser !== null && note.author === currentUser"
+        type="button"
+        class="text-button small"
+        :disabled="busy"
+        @click="startEditing(note)"
+      >
+        Edit
+      </button>
+
+      <button
+        type="button"
+        class="text-button small"
+        :disabled="busy"
+        @click="emit('proposeNoteRemoval', note)"
+      >
+        Propose removing
+      </button>
+    </div>
+  </template>
+</div>
+
+          <div class="connection-tools">
+            <button
+              type="button"
+              class="text-button small"
+              :disabled="busy"
+              @click="startConnectionNote(row.connection.connection)"
+            >
+              Add note
+            </button>
+
+            <button
+              type="button"
+              class="text-button small danger"
+              :disabled="busy"
+              @click="emit('proposeConnectionRemoval', row.connection.connection)"
+            >
+              Propose removing connection
+            </button>
+          </div>
+
+          <form
+            v-if="notingConnection === row.connection.connection"
+            class="add"
+            @submit.prevent="submitConnectionNote"
+          >
+            <textarea
+              v-model="connectionDraft"
+              rows="3"
+              maxlength="2000"
+              placeholder="Explain the relationship between these sources"
+              aria-label="Connection note"
+            ></textarea>
+
+            <button
+              type="submit"
+              class="button outline"
+              :disabled="busy || connectionDraft.trim() === ''"
+            >
+              Propose note
+            </button>
+
+            <button
+              type="button"
+              class="text-button small"
+              @click="cancelConnectionNote"
+            >
+              Cancel
+            </button>
+          </form>
         </li>
       </ul>
     </section>
@@ -443,6 +697,40 @@ textarea:focus {
   font-weight: 400;
   color: var(--color-danger);
 }
+.connection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+
+.connection-tools .danger {
+  color: var(--color-danger);
+}
+
+
+.connection-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.connection-note-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.connection-note-meta .text-button {
+  font-size: var(--text-xs);
+}
+
+
 @media (max-width: 800px) {
   .panel {
     width: 100%;

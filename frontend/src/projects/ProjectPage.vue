@@ -272,6 +272,31 @@ function proposeNoteEdit(note: Note, text: string) {
   );
 }
 
+
+type ConnectionId = ResearchGraph["connections"][number]["connection"];
+
+function proposeConnectionRemoval(connection: ConnectionId) {
+  void propose(
+    "/projects/contributions/submit-connection-removal",
+    api.projects.contributions["submit-connection-removal"]({
+      project,
+      connection,
+    }),
+  );
+}
+
+function proposeConnectionNote(connection: ConnectionId, text: string) {
+  void propose(
+    "/projects/contributions/submit-connection-note",
+    api.projects.contributions["submit-connection-note"]({
+      project,
+      connection,
+      text,
+    }),
+  );
+}
+
+
 /*
  * Proposing to remove sources: one from the source panel or the graph's menu, or several picked in
  * selection mode. All ask first, in the same dialog. One source is one REMOVE_SOURCE proposal;
@@ -805,6 +830,8 @@ async function decideBatch(accept: ProposalId[], reject: ProposalId[]) {
           @propose-note-removal="proposeNoteRemoval"
           @propose-removal="proposeRemoval"
           @propose-note-edit="proposeNoteEdit"
+          @propose-connection-note="proposeConnectionNote"
+          @propose-connection-removal="proposeConnectionRemoval"
         />
       </div>
       <p v-if="groupRefusal && !showGroups && !showSuggest && renamingGroup === null" class="refusal bar" role="alert">{{ groupRefusal }}</p>
